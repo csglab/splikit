@@ -65,7 +65,7 @@ multigedi_make_junction_ab <- function(STARsolo_SJ_dirs, white_barcode_lists = N
     mtx_dir <- paste0(STARsolo_SJ_dir, "/raw/matrix.mtx")
     feature_dir <- paste0(STARsolo_SJ_dir, "/raw/features.tsv")
     barcodes_dir <- paste0(STARsolo_SJ_dir, "/raw/barcodes.tsv")
-    internal_whitelist_dir <- paste0(STARsolo_SJ_dir, "/../Gene/filtered/barcodes.tsv")
+    internal_whitelist_dir <- paste0(STARsolo_SJ_dir, "/../GeneFull/filtered/barcodes.tsv")
     
     # Check for required files
     if (!file.exists(mtx_dir)) stop("No abundance matrix in STARsolo SJ direction for sample: ", sample_id, call. = FALSE)
@@ -172,14 +172,6 @@ multigedi_make_junction_ab <- function(STARsolo_SJ_dirs, white_barcode_lists = N
 }
 
 
-m1 <- multigedi_make_junction_ab(STARsolo_SJ_dirs  = paste0(list.files("/home/arsham79/scratch/Sandrine-s-project/results/star-output-new-whitelist/", full.names = TRUE), "/Solo.out/SJ/") |> as.list(), 
-                        sample_ids = sub(pattern = "(^.*)_MPS.*$", 
-                                                 replacement = "\\1", 
-                                                 x = list.files("/home/arsham79/scratch/Sandrine-s-project/results/star-output-new-whitelist/")) |> as.list()
-)
-
-
-
 #######################################################################
 ######################### make M1 #####################################
 #######################################################################
@@ -221,46 +213,73 @@ multigedi_make_m1 <- function(junction_ab_object) {
     stop("`eventdata` must contain a column named `row_names_mtx`.")
   }
   
+  # loading required libraries
+  load_libraries_for_m1 <- function() {
+    # List of required libraries
+    libraries <- c("data.table", "dplyr", "Matrix")
+    
+    # Attempt to load each library and handle errors
+    results <- sapply(libraries, function(lib) {
+      if (!require(lib, character.only = TRUE)) {
+        stop(paste("The package", lib, "is not installed. Please install it using install.packages(\"", lib, "\").", sep = " "))
+      }
+    })
+  }
+  
+  suppressPackageStartupMessages(load_libraries_for_m1())
+  
   # Remove `sample_id` and deduplicate events
   all_junctions <- unique(all_in_one_eventdata[, row_names_mtx])
   all_in_one_eventdata[, sample_id := NULL]
   temp_eventdata <- all_in_one_eventdata[match(all_junctions, row_names_mtx), ]
   
-  # Grouping based on start and end coordinates
-  temp_eventdata_grouped <- temp_eventdata %>%
-    group_by(start_cor_id) %>%
-    mutate(start_cor_group_id = cur_group_id(), start_cor_group_count = n()) %>%
-    ungroup() %>%
-    group_by(end_cor_id) %>%
-    mutate(end_cor_group_id = cur_group_id(), end_cor_group_count = n()) %>%
-    data.table::as.data.table()
+  # grouping based on first and last coordinates
+  temp_eventdata_grouped <- temp_eventdata %>% 
+    group_by(start_cor_id) %>% 
+    mutate(start_cor_group_id = cur_group_id()) %>% 
+    mutate(start_cor_group_count = n()) %>% 
+    ungroup() %>% 
+    group_by(end_cor_id) %>% 
+    mutate(end_cor_group_id = cur_group_id()) %>% 
+    mutate(end_cor_group_count = n()) %>%
+    as.data.table()
   
-  # Process start coordinate groups
+  # creating the event data for start coordinates groups
   temp_eventdata_grouped_start <- data.table::copy(temp_eventdata_grouped)
-  temp_eventdata_grouped_start <- temp_eventdata_grouped_start[start_cor_group_count != 1, ]
+  temp_eventdata_grouped_start <- temp_eventdata_grouped_start[,c("index" ,"end_cor_group_id", "end_cor_group_count") := NULL]
+  temp_eventdata_grouped_start <- temp_eventdata_grouped_start[start_cor_group_count != 1,]
   temp_eventdata_grouped_start[, start_cor_group_id := paste0(start_cor_group_id, "_S")]
-  temp_eventdata_grouped_start[, row_names_mtx := paste0(row_names_mtx, "_S")]
-  setnames(temp_eventdata_grouped_start, old = c("row_names_mtx", "row_names_mtx_new"), 
+  temp_eventdata_grouped_start[, row_names_mtx_new := paste0(row_names_mtx, "_S")]
+  setnames(x = temp_eventdata_grouped_start, 
+           old = c("row_names_mtx", "row_names_mtx_new"), 
            new = c("raw_row_names_mtx", "row_names_mtx"))
   
-  # Process end coordinate groups
+  # creating the event data for end coordinates groups
   temp_eventdata_grouped_end <- data.table::copy(temp_eventdata_grouped)
-  temp_eventdata_grouped_end <- temp_eventdata_grouped_end[end_cor_group_count != 1, ]
+  temp_eventdata_grouped_end <- temp_eventdata_grouped_end[, c("index" ,"start_cor_group_id", "start_cor_group_count") := NULL]
+  temp_eventdata_grouped_end <- temp_eventdata_grouped_end[end_cor_group_count != 1,]
   temp_eventdata_grouped_end[, end_cor_group_id := paste0(end_cor_group_id, "_E")]
-  temp_eventdata_grouped_end[, row_names_mtx := paste0(row_names_mtx, "_E")]
-  setnames(temp_eventdata_grouped_end, old = c("row_names_mtx", "row_names_mtx_new"), 
+  temp_eventdata_grouped_end[, row_names_mtx_new := paste0(row_names_mtx, "_E")]
+  setnames(x = temp_eventdata_grouped_end, 
+           old = c("row_names_mtx", "row_names_mtx_new"), 
            new = c("raw_row_names_mtx", "row_names_mtx"))
   
+
   # Combine start and end groups
-  colnames(temp_eventdata_grouped_end) <- colnames(temp_eventdata_grouped_start)
-  eventdata <- rbind(temp_eventdata_grouped_start, temp_eventdata_grouped_end)
-  
+  if(ncol(temp_eventdata_grouped_end) == ncol(temp_eventdata_grouped_start)){
+    
+    colnames(temp_eventdata_grouped_end) <- colnames(temp_eventdata_grouped_start)
+    eventdata <- rbind(temp_eventdata_grouped_start, temp_eventdata_grouped_end)
+    
+  }else{
+    
+    stop("The eventdata for start and end grouping have not the equal numbner of columns")
+  }
+
   # Rename columns for clarity
-  eventdata <- eventdata[, .(
-    chr, start, end, strand, intron_motif, is_annot, 
-    start_cor_id, end_cor_id, raw_row_names_mtx, group_id, 
-    group_count, row_names_mtx
-  )]
+  setnames(x = eventdata, 
+           old = c("start_cor_group_id", "start_cor_group_count"), 
+           new = c("group_id", "group_count"))
   
   # Create a table for all events
   all_events <- eventdata[, .(raw_row_names_mtx, row_names_mtx)]
@@ -339,7 +358,7 @@ multigedi_make_m1 <- function(junction_ab_object) {
 ##################### Gene expression #################################
 #######################################################################
 
-#' process_gene_expression
+#' multigedi_make_gene
 #'
 #' This function processes gene expression data from a given directory and creates a sparse matrix
 #' for gene expression. It supports barcode filtration using a provided whitelist or the filtered barcodes file.
@@ -359,15 +378,15 @@ multigedi_make_m1 <- function(junction_ab_object) {
 #' expression_dir <- "path/to/sample1"
 #' sample_id <- "sample1"
 #' whitelist_barcode <- c("barcode1", "barcode2")
-#' result <- process_gene_expression(expression_dir, sample_id, list(whitelist_barcode), use_filtered = FALSE)
+#' result <- multigedi_make_gene(expression_dir, sample_id, list(whitelist_barcode), use_filtered = FALSE)
 #'
 #' # Multiple samples processing with default filtered data
 #' expression_dirs <- list("path/to/sample1", "path/to/sample2")
 #' sample_ids <- c("sample1", "sample2")
-#' result <- process_gene_expression(expression_dirs, sample_ids, NULL, use_filtered = TRUE)
+#' result <- multigedi_make_gene(expression_dirs, sample_ids, NULL, use_filtered = TRUE)
 #'
 #' @export
-process_gene_expression <- function(expression_dirs, sample_ids, whitelist_barcodes = NULL, use_filtered = TRUE) {
+multigedi_make_gene <- function(expression_dirs, sample_ids, whitelist_barcodes = NULL, use_filtered = TRUE) {
   
   # Handle single sample input by converting to lists
   if (!is.list(expression_dirs)) expression_dirs <- list(expression_dirs)
@@ -402,18 +421,18 @@ process_gene_expression <- function(expression_dirs, sample_ids, whitelist_barco
     # Read gene expression data
     cat("├── Processing gene expression data for sample: ", sample_id, "\n")
     g_mtx <- Matrix::readMM(expression_matrix_dir)
-    g_brc <- data.table::fread(expression_barcodes_dir, header = FALSE)
-    g_feature <- data.table::fread(expression_features_dir, header = FALSE)
+    g_brc <- data.table::fread(expression_barcodes_dir, header = FALSE, showProgress = FALSE)$V1
+    g_feature <- data.table::fread(expression_features_dir, header = FALSE, showProgress = FALSE)
     
     # Set row and column names
     rownames(g_mtx) <- g_feature$V1
-    colnames(g_mtx) <- g_brc$V1
+    colnames(g_mtx) <- g_brc
     
     # Apply barcode filtration
     if (!is.null(whitelist_barcode)) {
       cat("│  ├──  Applying provided whitelist for sample: ", sample_id, "\n")
     } else if (use_filtered && file.exists(filtered_barcodes_dir)) {
-      whitelist_barcode <- data.table::fread(filtered_barcodes_dir, header = FALSE)$V1
+      whitelist_barcode <- data.table::fread(filtered_barcodes_dir, header = FALSE, showProgress = FALSE)$V1
       cat("│  ├──  Using filtered barcodes for sample: ", sample_id, "\n")
     }
     
@@ -476,12 +495,6 @@ process_gene_expression <- function(expression_dirs, sample_ids, whitelist_barco
 }
 
 
-gene <- process_gene_expression(expression_dirs = paste0(list.files("/home/arsham79/scratch/Sandrine-s-project/results/star-output-new-whitelist/", full.names = TRUE), "/Solo.out/Gene/") |> as.list(), 
-                          sample_ids = sub(pattern = "(^.*)_MPS.*$", 
-                                           replacement = "\\1", 
-                                           x = list.files("/home/arsham79/scratch/Sandrine-s-project/results/star-output-new-whitelist/")) |> as.list()
-)
-
 
 
 
@@ -489,7 +502,7 @@ gene <- process_gene_expression(expression_dirs = paste0(list.files("/home/arsha
 ################################ Velocyto #############################
 #######################################################################
 
-#' process_velocyto_data
+#' multigedi_make_velo
 #'
 #' This function processes spliced and unspliced counts data from Velocyto outputs. It reads the respective matrices, 
 #' sets appropriate row and column names, applies barcode filtration using a provided whitelist or the filtered barcodes file, 
@@ -515,19 +528,19 @@ gene <- process_gene_expression(expression_dirs = paste0(list.files("/home/arsha
 #' # Process data for multiple samples without merging
 #' velocyto_dirs <- list("path/to/sample1", "path/to/sample2")
 #' sample_ids <- c("sample1", "sample2")
-#' result <- process_velocyto_data(velocyto_dirs, sample_ids, merge_counts = FALSE)
+#' result <- multigedi_make_velo(velocyto_dirs, sample_ids, merge_counts = FALSE)
 #'
 #' # Process data for multiple samples and merge counts
-#' result <- process_velocyto_data(velocyto_dirs, sample_ids, merge_counts = TRUE)
+#' result <- multigedi_make_velo(velocyto_dirs, sample_ids, merge_counts = TRUE)
 #'
 #' # Process a single sample with a provided whitelist
 #' velocyto_dir <- "path/to/sample1"
 #' sample_id <- "sample1"
 #' whitelist_barcode <- c("barcode1", "barcode2")
-#' result <- process_velocyto_data(list(velocyto_dir), list(sample_id), list(whitelist_barcode), merge_counts = FALSE)
+#' result <- multigedi_make_velo(list(velocyto_dir), list(sample_id), list(whitelist_barcode), merge_counts = FALSE)
 #'
 #' @export
-process_velocyto_data <- function(velocyto_dirs, sample_ids, whitelist_barcodes = NULL, use_filtered = TRUE, merge_counts = FALSE) {
+multigedi_make_velo <- function(velocyto_dirs, sample_ids, whitelist_barcodes = NULL, use_filtered = TRUE, merge_counts = FALSE) {
   
   # Handle single sample input by converting to lists
   if (!is.list(velocyto_dirs)) velocyto_dirs <- list(velocyto_dirs)
@@ -565,20 +578,20 @@ process_velocyto_data <- function(velocyto_dirs, sample_ids, whitelist_barcodes 
     cat("├── Processing Velocyto data for sample: ", sample_id, "\n")
     spliced_mtx <- Matrix::readMM(spliced_dir)
     unspliced_mtx <- Matrix::readMM(unspliced_dir)
-    stab_barcode <- data.table::fread(barcodes_dir, header = FALSE)
-    stab_features <- data.table::fread(features_dir, header = FALSE)
+    stab_barcode <- data.table::fread(barcodes_dir, header = FALSE, showProgress = FALSE)$V1
+    stab_features <- data.table::fread(features_dir, header = FALSE, showProgress = FALSE)
     
     # Set row and column names
     rownames(spliced_mtx) <- stab_features$V1
     rownames(unspliced_mtx) <- stab_features$V1
-    colnames(spliced_mtx) <- stab_barcode$V1
-    colnames(unspliced_mtx) <- stab_barcode$V1
+    colnames(spliced_mtx) <- stab_barcode
+    colnames(unspliced_mtx) <- stab_barcode
     
     # Apply barcode filtration
     if (!is.null(whitelist_barcode)) {
       cat("│  ├──  Applying provided whitelist for sample: ", sample_id, "\n")
     } else if (use_filtered && file.exists(filtered_barcodes_dir)) {
-      whitelist_barcode <- data.table::fread(filtered_barcodes_dir, header = FALSE)$V1
+      whitelist_barcode <- data.table::fread(filtered_barcodes_dir, header = FALSE, showProgress = FALSE)$V1
       cat("│  ├──  Using filtered barcodes for sample: ", sample_id, "\n")
     }
     
@@ -661,4 +674,168 @@ process_velocyto_data <- function(velocyto_dirs, sample_ids, whitelist_barcodes 
     names(final_results) <- sample_ids
     return(final_results)  # Return results for multiple samples
   }
+}
+
+
+#######################################################################
+############################## countsplit #############################
+#######################################################################
+
+#' multigedi_countsplit
+#'
+#' Splits a matrix into training and testing datasets using the countsplit method.
+#'
+#' This function requires the \code{countsplit} package. If it is not installed, the function will attempt to install it.
+#'
+#' @param m1_inclusion_matrix A numeric matrix to be split.
+#' @param folds A positive numeric value specifying the number of folds. Default is 2.
+#' @param epsilon A numeric vector of length 2 specifying the epsilon values. Default is \code{c(0.5, 0.5)}.
+#' @param object_names A character string specifying the base name for output train/test objects.
+#' @examples
+#' \dontrun{
+#' m1_inclusion_matrix <- matrix(runif(100), nrow = 10)
+#' multigedi_countsplit(m1_inclusion_matrix, folds = 2, epsilon = c(0.5, 0.5), object_names = "example")
+#' }
+#' @import countsplit
+#' @export
+multigedi_countsplit <- function(m1_inclusion_matrix, folds = 2, epsilon = c(0.5, 0.5), object_names = "m1") {
+  # Ensure countsplit package is installed and loaded
+  if (!requireNamespace("countsplit", quietly = TRUE)) {
+    message("The 'countsplit' package is not installed. Attempting to install it now...")
+    install.packages("countsplit")
+    if (!requireNamespace("countsplit", quietly = TRUE)) {
+      stop("Failed to install the 'countsplit' package. Please install it manually and try again.")
+    }
+  }
+  
+  # Load the countsplit library
+  library(countsplit)
+  
+  # Input validation
+  if (missing(m1_inclusion_matrix) || is.null(m1_inclusion_matrix)) {
+    stop("Error: 'm1_inclusion_matrix' is required and cannot be NULL.")
+  }
+  
+  if (!is.character(object_names) || length(object_names) != 1) {
+    stop("Error: 'object_names' must be a single character string.")
+  }
+  
+  if (!is.numeric(folds) || folds <= 0) {
+    stop("Error: 'folds' must be a positive numeric value.")
+  }
+  
+  if (!is.numeric(epsilon) || length(epsilon) != 2) {
+    stop("Error: 'epsilon' must be a numeric vector of length 2.")
+  }
+  
+  # Try-catch block for better error management
+  tryCatch({
+    # Perform countsplit operation
+    countsplit_obj <- countsplit(X = m1_inclusion_matrix, folds = folds, epsilon = epsilon)
+    train_data <- countsplit_obj[[1]]
+    test_data <- countsplit_obj[[2]]
+    
+    # Assign train and test data to global environment
+    assign(paste0(object_names, "_train"), train_data, envir = .GlobalEnv)
+    assign(paste0(object_names, "_test"), test_data, envir = .GlobalEnv)
+    
+    message(sprintf(
+      "Train and test datasets have been assigned to R objects: '%s_train' and '%s_test'.",
+      object_names, object_names
+    ))
+    
+    message("Countsplit operation completed successfully!")
+  }, error = function(e) {
+    # Handle errors
+    stop(paste("An error occurred during countsplit:", e$message))
+  })
+}
+
+
+
+
+#######################################################################
+################################ make M2 ##############################
+#######################################################################
+
+#' multigedi_make_m2
+#'
+#' Creates the M2 matrix from a given m1_inclusion_matrix and eventdata, ensuring the proper processing of group indices and matrix operations.
+#'
+#' @param m1_inclusion_matrix A sparse matrix to be modified and used for creating the M2 matrix.
+#' @param eventdata A data.table containing event information with at least `group_id` and an index column.
+#' @return A sparse matrix M2 with the dummy row removed and proper adjustments made.
+#' @examples
+#' library(data.table)
+#' library(Matrix)
+#'
+#' m1_inclusion_matrix <- Matrix(data = runif(20), nrow = 5, ncol = 4, sparse = TRUE)
+#' eventdata <- data.table(group_id = c("A", "B", "C", "D", "E"))
+#' M2 <- multigedi_make_m2(m1_inclusion_matrix, eventdata)
+#' @export
+multigedi_make_m2 <- function(m1_inclusion_matrix, eventdata) {
+  # Input validation
+  if (missing(m1_inclusion_matrix) || !inherits(m1_inclusion_matrix, "sparseMatrix")) {
+    stop("Error: 'm1_inclusion_matrix' must be a sparse matrix and cannot be NULL.")
+  }
+  if (missing(eventdata) || !is.data.table(eventdata)) {
+    stop("Error: 'eventdata' must be a data.table and cannot be NULL.")
+  }
+  if (!"group_id" %in% colnames(eventdata)) {
+    stop("Error: 'eventdata' must contain a 'group_id' column.")
+  }
+  
+
+  # Add an index column to eventdata
+  eventdata[, i := .I]
+  
+  # Create a dummy row and append to m1_inclusion_matrix
+  dummy <- Matrix(data = 1, ncol = ncol(m1_inclusion_matrix), nrow = 1, sparse = TRUE, dimnames = list("dummy", colnames(m1_inclusion_matrix)))
+  m1_inclusion_matrix <- rbind(m1_inclusion_matrix, dummy)
+  
+  message("Step 1 | Modifying the m1_inclusion_matrix")
+  
+  # Add dummy group to group_ids
+  dummy_group <- data.table(i = nrow(m1_inclusion_matrix), group_id = 'dummy')
+  group_ids <- eventdata[, .(i, group_id)]
+  group_ids <- rbind(group_ids, dummy_group)
+  
+  rm(dummy_group)  # Remove intermediate variable
+  
+  # Add group index and initialize variables
+  num_cells <- ncol(m1_inclusion_matrix)
+  groups_start_vector <- eventdata[, unique(group_id)]
+  
+  message("Step 2 | Creating M2")
+  
+  # Convert m1_inclusion_matrix to data.table
+  m1 <- summary(m1_inclusion_matrix) %>% as.data.table()
+  setnames(m1, 'x', 'x_1')
+  
+  # Merge group information
+  m1 <- merge(m1, group_ids, by = 'i')
+  m1[, x_tot := sum(x_1), .(group_id, j)]
+  m_tot <- m1[, .(group_id, j, x_tot)] %>% unique()
+  
+  # Filter and merge relevant data
+  m_tot <- m_tot[x_tot > 0]
+  m_tot <- merge(m_tot, group_ids, by = 'group_id', allow.cartesian = TRUE)
+  m_tot <- merge(m_tot, m1, by = c('group_id', 'i', 'j', 'x_tot'), all.x = TRUE)
+  m_tot[is.na(x_1), x_1 := 0]
+  m_tot[, x_2 := x_tot - x_1]
+  
+  # Create sparse matrix for M2_train
+  M2_train <- m_tot[, sparseMatrix(i = i, j = j, x = x_2)]
+  
+  message("Step 3 | Finalizing M2 creation")
+  
+  # Set row and column names
+  rownames(M2_train) <- rownames(m1_inclusion_matrix)
+  colnames(M2_train) <- colnames(m1_inclusion_matrix)
+  
+  # Remove dummy row from M2_train
+  M2 <- M2_train[-nrow(M2_train), ]
+  
+  message("All done!")
+  return(M2)
 }
