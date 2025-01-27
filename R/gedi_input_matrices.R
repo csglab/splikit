@@ -60,7 +60,7 @@ multigedi_make_junction_ab <- function(STARsolo_SJ_dirs, white_barcode_lists = N
   }
   
   # Helper function to process one sample
-  process_sample <- function(STARsolo_SJ_dir, white_barcode_list, sample_id) {
+  process_sj_sample <- function(STARsolo_SJ_dir, white_barcode_list, sample_id) {
     # Define paths
     mtx_dir <- paste0(STARsolo_SJ_dir, "/raw/matrix.mtx")
     feature_dir <- paste0(STARsolo_SJ_dir, "/raw/features.tsv")
@@ -147,7 +147,7 @@ multigedi_make_junction_ab <- function(STARsolo_SJ_dirs, white_barcode_lists = N
   
   # Use mapply to process all samples
   results <- mapply(
-    process_sample,
+    process_sj_sample,
     STARsolo_SJ_dirs,
     white_barcode_lists,
     sample_ids,
@@ -384,7 +384,7 @@ process_gene_expression <- function(expression_dirs, sample_ids, whitelist_barco
   }
   
   # Helper function to process one sample
-  process_sample <- function(expression_dir, sample_id, whitelist_barcode) {
+  process_ex_sample <- function(expression_dir, sample_id, whitelist_barcode) {
     # Determine directory (filtered or raw)
     data_dir <- if (use_filtered) paste0(expression_dir, "/filtered") else paste0(expression_dir, "/raw")
     
@@ -451,7 +451,7 @@ process_gene_expression <- function(expression_dirs, sample_ids, whitelist_barco
   
   # Use mapply to process all samples
   results <- mapply(
-    process_sample,
+    process_ex_sample,
     expression_dirs,
     sample_ids,
     whitelist_barcodes,
@@ -544,7 +544,7 @@ process_velocyto_data <- function(velocyto_dirs, sample_ids, whitelist_barcodes 
   }
   
   # Helper function to process one sample
-  process_sample <- function(velocyto_dir, sample_id, whitelist_barcode) {
+  process_velo_sample <- function(velocyto_dir, sample_id, whitelist_barcode) {
     # Determine directory (filtered or raw)
     data_dir <- if (use_filtered) paste0(velocyto_dir, "/filtered") else paste0(velocyto_dir, "/raw")
     
@@ -625,7 +625,7 @@ process_velocyto_data <- function(velocyto_dirs, sample_ids, whitelist_barcodes 
   
   # Use mapply to process all samples
   results <- mapply(
-    process_sample,
+    process_velo_sample,
     velocyto_dirs,
     sample_ids,
     whitelist_barcodes,
