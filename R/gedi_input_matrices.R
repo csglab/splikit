@@ -55,36 +55,46 @@ multigedi_make_junction_ab <- function(STARsolo_SJ_dirs, white_barcode_lists = N
   }
   
   # Ensure inputs have the same length
-  if (!all(length(STARsolo_SJ_dirs) == length(white_barcode_lists), length(white_barcode_lists) == length(sample_ids))) {
+  if (!all(length(STARsolo_SJ_dirs) == length(white_barcode_lists), 
+           length(white_barcode_lists) == length(sample_ids))) {
     stop("All input lists (STARsolo_SJ_dirs, white_barcode_lists, sample_ids) must have the same length.", call. = FALSE)
   }
   
   # Helper function to process one sample
   process_sj_sample <- function(STARsolo_SJ_dir, white_barcode_list, sample_id) {
     # Define paths
-    mtx_dir <- paste0(STARsolo_SJ_dir, "/raw/matrix.mtx")
-    feature_dir <- paste0(STARsolo_SJ_dir, "/raw/features.tsv")
-    barcodes_dir <- paste0(STARsolo_SJ_dir, "/raw/barcodes.tsv")
-    internal_whitelist_dir <- paste0(STARsolo_SJ_dir, "/../GeneFull/filtered/barcodes.tsv")
+    mtx_dir <- file.path(STARsolo_SJ_dir, "raw", "matrix.mtx")
+    feature_dir <- file.path(STARsolo_SJ_dir, "../../SJ.out.tab")
+    barcodes_dir <- file.path(STARsolo_SJ_dir, "raw", "barcodes.tsv")
+    internal_whitelist_dir <- file.path(STARsolo_SJ_dir, "..", "Gene", "filtered", "barcodes.tsv")
     
     # Check for required files
-    if (!file.exists(mtx_dir)) stop("No abundance matrix in STARsolo SJ direction for sample: ", sample_id, call. = FALSE)
-    if (!file.exists(feature_dir)) stop("No feature matrix in STARsolo SJ direction for sample: ", sample_id, call. = FALSE)
-    if (!file.exists(barcodes_dir)) stop("No barcode matrix in STARsolo SJ direction for sample: ", sample_id, call. = FALSE)
+    if (!file.exists(mtx_dir)) {
+      stop("No abundance matrix in STARsolo SJ directory for sample: ", sample_id, call. = FALSE)
+    }
+    if (!file.exists(feature_dir)) {
+      stop("No feature matrix in STARsolo SJ directory for sample: ", sample_id, call. = FALSE)
+    }
+    if (!file.exists(barcodes_dir)) {
+      stop("No barcode file in STARsolo SJ directory for sample: ", sample_id, call. = FALSE)
+    }
     
     # Read splicing data
     cat("├── Processing sample: ", sample_id, "\n")
     mtx <- Matrix::readMM(mtx_dir)
     raw_brc <- data.table::fread(barcodes_dir, header = FALSE, showProgress = FALSE)
-    feature <- data.table::fread(feature_dir, select = c(1, 2, 3, 4, 5, 6), 
-                                 col.names = c('chr', 'start', 'end', 'strand', "intron_motif", 'is_annot'),
-                                 showProgress = FALSE)
+    feature <- data.table::fread(
+      feature_dir,
+      select = c(1, 2, 3, 4, 5, 6),
+      col.names = c('chr', 'start', 'end', 'strand', "intron_motif", 'is_annot'),
+      showProgress = FALSE
+    )
     
     # Use internal whitelist if enabled and no external whitelist is provided
     if (use_internal_whitelist && is.null(white_barcode_list)) {
       if (file.exists(internal_whitelist_dir)) {
         white_barcode_list <- data.table::fread(internal_whitelist_dir, header = FALSE, showProgress = FALSE)$V1
-        cat("│  ├──  Using STARsolo internal whitelist for sample: ", sample_id, "\n")
+        cat("│  ├── Using STARsolo internal whitelist for sample: ", sample_id, "\n")
       } else {
         stop("Internal whitelist not found at ", internal_whitelist_dir, " for sample: ", sample_id, call. = FALSE)
       }
@@ -120,24 +130,26 @@ multigedi_make_junction_ab <- function(STARsolo_SJ_dirs, white_barcode_lists = N
         stop("All barcodes were removed after trimming for sample: ", sample_id, call. = FALSE)
       }
       
-      cat("│  ├──  Trimmed junction abundance matrix for sample: ", sample_id, " (", final_barcodes, " barcodes remaining)\n")
+      cat("│  ├── Trimmed junction abundance matrix for sample: ", sample_id, 
+          " (", final_barcodes, " barcodes remaining)\n")
     } else {
-      cat("│  ├──  No barcode filtration applied for sample: ", sample_id, "\n")
+      cat("│  ├── No barcode filtration applied for sample: ", sample_id, "\n")
     }
     
     # Append sample_id to column names
     colnames(mtx) <- paste0(colnames(mtx), "-", sample_id)
     
     # Save splicing modality
-    m1 <- list()
-    m1[["eventdata"]] <- feature
-    m1[["junction_ab"]] <- as(mtx, "CsparseMatrix")
+    m1 <- list(
+      eventdata = feature,
+      junction_ab = as(mtx, "CsparseMatrix")
+    )
     
     # Collect summary information
     summary_row <- data.frame(
-      Sample = sample_id,
+      Sample   = sample_id,
       Barcodes = ncol(mtx),
-      Events = nrow(mtx),
+      Events   = nrow(mtx),
       stringsAsFactors = FALSE
     )
     
@@ -145,7 +157,7 @@ multigedi_make_junction_ab <- function(STARsolo_SJ_dirs, white_barcode_lists = N
     return(list(result = m1, summary = summary_row))
   }
   
-  # Use mapply to process all samples
+  # Process all samples
   results <- mapply(
     process_sj_sample,
     STARsolo_SJ_dirs,
@@ -162,14 +174,11 @@ multigedi_make_junction_ab <- function(STARsolo_SJ_dirs, white_barcode_lists = N
   cat("\nSummary of Processed Samples in M1 matrix:\n")
   print(summary_table)
   
-  # Return all results
-  if (length(final_results) == 1) {
-    return(final_results[[1]])  # Return the single result as a list
-  } else {
-    names(final_results) <- sample_ids
-    return(final_results)
-  }
+  # Always return a named list, even for a single sample
+  names(final_results) <- unlist(sample_ids)
+  return(final_results)
 }
+
 
 
 #######################################################################
@@ -368,7 +377,7 @@ multigedi_make_m1 <- function(junction_ab_object) {
 #' @param sample_ids A character vector or list of unique sample IDs corresponding to each directory in `expression_dirs`.
 #' @param whitelist_barcodes A list of character vectors, each containing barcode whitelist(s) for the corresponding sample.
 #'                            If `NULL` (default), the function uses the filtered barcodes file if available.
-#' @param use_filtered A logical flag (default `TRUE`) indicating whether to use the `filtered` data for barcode filtration.
+#' @param use_internal_whitelist A logical flag (default `TRUE`) indicating whether to use the `filtered` data for barcode filtration.
 #'                     If `FALSE`, no barcode filtration is applied unless a whitelist is provided.
 #' @return A list containing processed gene expression data for each sample. If a single sample is provided,
 #'         the function returns the processed data as a sparse matrix. For multiple samples, a named list is returned.
@@ -378,15 +387,15 @@ multigedi_make_m1 <- function(junction_ab_object) {
 #' expression_dir <- "path/to/sample1"
 #' sample_id <- "sample1"
 #' whitelist_barcode <- c("barcode1", "barcode2")
-#' result <- multigedi_make_gene(expression_dir, sample_id, list(whitelist_barcode), use_filtered = FALSE)
+#' result <- multigedi_make_gene(expression_dir, sample_id, list(whitelist_barcode), use_internal_whitelist = FALSE)
 #'
 #' # Multiple samples processing with default filtered data
 #' expression_dirs <- list("path/to/sample1", "path/to/sample2")
 #' sample_ids <- c("sample1", "sample2")
-#' result <- multigedi_make_gene(expression_dirs, sample_ids, NULL, use_filtered = TRUE)
+#' result <- multigedi_make_gene(expression_dirs, sample_ids, NULL, use_internal_whitelist = TRUE)
 #'
 #' @export
-multigedi_make_gene <- function(expression_dirs, sample_ids, whitelist_barcodes = NULL, use_filtered = TRUE) {
+multigedi_make_gene <- function(expression_dirs, sample_ids, whitelist_barcodes = NULL, use_internal_whitelist = TRUE) {
   
   # Handle single sample input by converting to lists
   if (!is.list(expression_dirs)) expression_dirs <- list(expression_dirs)
@@ -405,14 +414,14 @@ multigedi_make_gene <- function(expression_dirs, sample_ids, whitelist_barcodes 
   # Helper function to process one sample
   process_ex_sample <- function(expression_dir, sample_id, whitelist_barcode) {
     # Determine directory (filtered or raw)
-    data_dir <- if (use_filtered) paste0(expression_dir, "/filtered") else paste0(expression_dir, "/raw")
+    data_dir <- if (use_internal_whitelist) paste0(expression_dir, "/filtered") else paste0(expression_dir, "/raw")
     
     # Define paths
     expression_matrix_dir <- paste0(data_dir, "/matrix.mtx")
     expression_barcodes_dir <- paste0(data_dir, "/barcodes.tsv")
     expression_features_dir <- paste0(data_dir, "/features.tsv")
     filtered_barcodes_dir <- paste0(expression_dir, "/filtered/barcodes.tsv")  # For barcode filtration
-    
+
     # Check for required files
     if (!file.exists(expression_matrix_dir)) stop("No expression matrix file found for sample: ", sample_id, call. = FALSE)
     if (!file.exists(expression_barcodes_dir)) stop("No barcodes file found for sample: ", sample_id, call. = FALSE)
@@ -431,7 +440,7 @@ multigedi_make_gene <- function(expression_dirs, sample_ids, whitelist_barcodes 
     # Apply barcode filtration
     if (!is.null(whitelist_barcode)) {
       cat("│  ├──  Applying provided whitelist for sample: ", sample_id, "\n")
-    } else if (use_filtered && file.exists(filtered_barcodes_dir)) {
+    } else if (use_internal_whitelist && file.exists(filtered_barcodes_dir)) {
       whitelist_barcode <- data.table::fread(filtered_barcodes_dir, header = FALSE, showProgress = FALSE)$V1
       cat("│  ├──  Using filtered barcodes for sample: ", sample_id, "\n")
     }
@@ -453,6 +462,9 @@ multigedi_make_gene <- function(expression_dirs, sample_ids, whitelist_barcodes 
     } else {
       cat("│  ├──  No barcode filtration applied for sample: ", sample_id, "\n")
     }
+    
+    # Append sample_id to column names
+    colnames(g_mtx) <- paste0(colnames(g_mtx), "-", sample_id)
     
     # Collect summary information
     summary_row <- data.frame(
@@ -512,8 +524,8 @@ multigedi_make_gene <- function(expression_dirs, sample_ids, whitelist_barcodes 
 #'                      Each directory should contain subdirectories (`filtered` or `raw`) with required files.
 #' @param sample_ids A character vector or list of unique sample IDs corresponding to each directory in `velocyto_dirs`.
 #' @param whitelist_barcodes A list of character vectors, each containing barcode whitelist(s) for the corresponding sample.
-#'                            If `NULL` (default), the function uses the filtered barcodes file if `use_filtered` is `TRUE`.
-#' @param use_filtered A logical flag (default `TRUE`) indicating whether to use the `filtered` data for barcode filtration.
+#'                            If `NULL` (default), the function uses the filtered barcodes file if `use_internal_whitelist` is `TRUE`.
+#' @param use_internal_whitelist A logical flag (default `TRUE`) indicating whether to use the `filtered` data for barcode filtration.
 #'                     If `FALSE`, the `raw` data is used, and no barcode filtration is applied unless a whitelist is provided.
 #' @param merge_counts A logical flag (default `FALSE`) indicating whether to merge all spliced and unspliced matrices
 #'                     across samples into two large matrices. If `TRUE`, the function returns a single spliced and
@@ -540,7 +552,7 @@ multigedi_make_gene <- function(expression_dirs, sample_ids, whitelist_barcodes 
 #' result <- multigedi_make_velo(list(velocyto_dir), list(sample_id), list(whitelist_barcode), merge_counts = FALSE)
 #'
 #' @export
-multigedi_make_velo <- function(velocyto_dirs, sample_ids, whitelist_barcodes = NULL, use_filtered = TRUE, merge_counts = FALSE) {
+multigedi_make_velo <- function(velocyto_dirs, sample_ids, whitelist_barcodes = NULL, use_internal_whitelist = TRUE, merge_counts = FALSE) {
   
   # Handle single sample input by converting to lists
   if (!is.list(velocyto_dirs)) velocyto_dirs <- list(velocyto_dirs)
@@ -559,7 +571,7 @@ multigedi_make_velo <- function(velocyto_dirs, sample_ids, whitelist_barcodes = 
   # Helper function to process one sample
   process_velo_sample <- function(velocyto_dir, sample_id, whitelist_barcode) {
     # Determine directory (filtered or raw)
-    data_dir <- if (use_filtered) paste0(velocyto_dir, "/filtered") else paste0(velocyto_dir, "/raw")
+    data_dir <- if (use_internal_whitelist) paste0(velocyto_dir, "/filtered") else paste0(velocyto_dir, "/raw")
     
     # Define paths
     spliced_dir <- paste0(data_dir, "/spliced.mtx")
@@ -590,7 +602,7 @@ multigedi_make_velo <- function(velocyto_dirs, sample_ids, whitelist_barcodes = 
     # Apply barcode filtration
     if (!is.null(whitelist_barcode)) {
       cat("│  ├──  Applying provided whitelist for sample: ", sample_id, "\n")
-    } else if (use_filtered && file.exists(filtered_barcodes_dir)) {
+    } else if (use_internal_whitelist && file.exists(filtered_barcodes_dir)) {
       whitelist_barcode <- data.table::fread(filtered_barcodes_dir, header = FALSE, showProgress = FALSE)$V1
       cat("│  ├──  Using filtered barcodes for sample: ", sample_id, "\n")
     }
@@ -839,3 +851,123 @@ multigedi_make_m2 <- function(m1_inclusion_matrix, eventdata) {
   message("All done!")
   return(M2)
 }
+
+
+
+##############################################################################
+################################ get_embeddings ##############################
+##############################################################################
+
+#' @title Compute Embeddings with SVD, PC, and UMAP
+#'
+#' @description
+#' `multigedi_get_embeddings` performs SVD, computes Principal Components,
+#' and optionally runs UMAP on the given GEDI model. The function is designed
+#' to handle both the joint modality and individual modalities defined in the
+#' `GEDI_model`.
+#'
+#' @param GEDI_model A list or object containing GEDI model data. Must contain
+#' `GEDI_model$aux$Modalities` to identify modalities.
+#' @param SVD Logical. If `TRUE`, SVD (via `svd.multigedi`) will be performed. Default is `TRUE`.
+#' @param PC Logical. If `TRUE`, principal components will be computed from the SVD result. Default is `TRUE`.
+#' @param UMAP Logical. If `TRUE`, UMAP (via `uwot::umap`) will be performed. Default is `TRUE`.
+#' @param umap_min_res Numeric. Minimum distance parameter for UMAP. Default is `0.01`.
+#' @param umap_method Character. The distance metric for UMAP. Default is `"euclidean"`.
+#' @param verbose Logical. If `TRUE`, prints progress messages. Default is `FALSE`.
+#'
+#' @return
+#' A named list of embeddings for each modality (including `Joint`).
+#' Each modality contains the results of SVD, PC, and optionally UMAP.
+#'
+#' @examples
+#' \donttest{
+#' # Example usage
+#' # Suppose `my_gedi_model` is a valid GEDI model object
+#' # results <- multigedi_get_embeddings(my_gedi_model, verbose = TRUE)
+#' }
+#'
+#' @export
+multigedi_get_embeddings <- function(
+    GEDI_model, 
+    SVD          = TRUE, 
+    PC           = TRUE, 
+    UMAP         = TRUE, 
+    umap_min_res = 0.01, 
+    umap_method  = "euclidean",
+    verbose      = FALSE
+) {
+  # Check input validity
+  if (!"aux" %in% names(GEDI_model) || !"Modalities" %in% names(GEDI_model$aux)) {
+    stop("Invalid GEDI_model: Missing 'aux$Modalities'.")
+  }
+  
+  # Get all modalities including the joint modality
+  modality_names <- GEDI_model$aux$Modalities
+  joint_modality <- "Joint"
+  all_modalities <- c(joint_modality, modality_names)
+  
+  # Initialize variables
+  embedding_list <- list()
+  
+  # Iterate through each modality (joint first, then specific modalities)
+  for (modality_name in all_modalities) {
+    if (verbose) message("Processing modality: ", modality_name)
+    
+    # Step 1: Perform SVD
+    if (SVD) {
+      if (verbose) message("  Performing SVD...")
+      svd_res <- tryCatch(
+        svd.multigedi(
+          object     = GEDI_model, 
+          Modalities = if (modality_name == joint_modality) NULL else modality_name
+        ),
+        error = function(e) {
+          stop("SVD failed for modality ", modality_name, ": ", e$message)
+        }
+      )
+      embedding_list[[modality_name]][["SVD"]] <- svd_res
+      if (verbose) message("  SVD completed.")
+    } else {
+      stop("SVD is required but was skipped. Cannot proceed.")
+    }
+    
+    # Step 2: Compute Principal Components (PC)
+    if (PC) {
+      if (!exists("svd_res")) {
+        stop("PC computation requires SVD results, which are missing.")
+      }
+      if (verbose) message("  Computing Principal Components...")
+      pc_res <- svd_res$v %*% diag(svd_res$d)
+      embedding_list[[modality_name]][["PC"]] <- pc_res
+      if (verbose) message("  PC computation completed.")
+    } else {
+      stop("PC is required but was skipped. Cannot proceed.")
+    }
+    
+    # Step 3: Perform UMAP
+    if (UMAP) {
+      if (!exists("pc_res")) {
+        stop("UMAP computation requires PC results, which are missing.")
+      }
+      if (verbose) message("  Performing UMAP...")
+      umap_res <- tryCatch(
+        uwot::umap(
+          X       = pc_res, 
+          metric  = umap_method, 
+          min_dist = umap_min_res
+        ),
+        error = function(e) {
+          stop("UMAP failed for modality ", modality_name, ": ", e$message)
+        }
+      )
+      embedding_list[[modality_name]][["UMAP"]] <- umap_res
+      if (verbose) message("  UMAP completed.")
+    } else {
+      if (verbose) message("  UMAP was skipped.")
+    }
+  }
+  
+  if (verbose) message("All modalities processed successfully.")
+  return(embedding_list)
+}
+
