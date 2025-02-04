@@ -971,3 +971,66 @@ multigedi_get_embeddings <- function(
   return(embedding_list)
 }
 
+
+
+
+
+
+
+multigedi_make_gene_eventdata <- function(eventdata, GTF_file_direction){
+  
+  
+  # Reading the GTF file and converting it to data table
+  GTF <- rtracklayer::readGFF(GTF_file_direction)
+  GTF <- as.data.table(GTF)
+  
+  # Trimming the GTF for only Genes and save it into `ref_gtf`
+  ref_gtf <- GTF[GTF$type == "gene" ,]
+  
+  # Selecting only needed columns
+  ref_gtf <- ref_gtf[, c("seqid", "start", "end", "strand", "gene_id", "gene_name")]
+  
+  # Do a little cleaning
+  setnames(x = ref_gtf, old = "seqid", new = "chr")
+  ref_gtf$chr <- as.character(ref_gtf$chr)
+  
+  # The Strand annotation in star solo is based in 1 and 2 ,but the GTF file has + and -
+  temp_change_starnd_dt <- data.table(new_strand = c(1, 2), strand = c("+", "-"))
+  ref_gtf <- merge(ref_gtf, temp_change_starnd_dt, by = "strand", sort = FALSE)
+  
+  # Deleteing the old strand and rename the 'new_starnd' to 'strand'
+  ref_gtf[,strand := NULL]
+  setnames(x = ref_gtf, old = "new_strand", new = "strand")
+  
+  
+  ## The core Part in which we want to do the foverlaps
+  
+  # First we neeed to set proper keys in both eventdata and ref_gtf data tables
+  # Adding the gene names to the features
+  setkey(eventdata, chr, strand, start, end)
+  setkey(ref_gtf, chr, strand, start, end)
+  
+  new_eventdata <- foverlaps(x = eventdata, y = ref_gtf, type = "within")
+  new_eventdata <- na.omit(new_eventdata)
+  
+  return(new_eventdata)
+  
+  
+  
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
