@@ -63,7 +63,7 @@ We also handle sample-specific junctions. If a junction is present in only a sub
 ![alt text](https://github.com/Arshammik/Splicing-Pipeline/blob/main/Frame%209%20(1).jpg?raw=true)
 
 
-Subsequently, motivated by [Anna Neufeld et.al](https://arxiv.org/abs/2207.00554) we employed a Poisson read splitting (thinning) technique to divide the raw counts into train and test data sets to address the double-dipping problem (wherein the same data set is used to generate and test a hypothesis). This was followed by a filtration of highly variable features in both modalities. 
+Subsequently, we employed a Poisson read splitting (thinning) technique to divide the raw counts into train and test data sets to address the double-dipping problem (wherein the same data set is used to generate and test a hypothesis). This was followed by a filtration of highly variable features in both modalities. 
 
 
 # Usage
