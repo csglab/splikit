@@ -54,11 +54,9 @@ M2_{ij} = \sum_{\substack{k \in J \\ k \neq j}} M1_{ik}
 ```
 
 
-where $J$ denotes the set of all junctions in the LJV. Such clarity is essential to correctly communicate the intended computation.
+where $J$ denotes the set of all junctions in the LJV. The grouping method is determined by whether the first or the last coordinate is used, with an appended `-E` or `-S` added to the event IDs accordingly. This approach may result in a single junction receiving two different measurements in the M2 counts (in the inclusion matrix) while having identical measurements in the M1 matrix.
 
-The grouping method is determined by whether the first or the last coordinate is used, with an appended `-E` or `-S` added to the event IDs accordingly. This approach may result in a single junction receiving two different measurements in the M2 counts (in the inclusion matrix) while having identical measurements in the M1 matrix.
-
-We also handle sample-specific junctions. If a junction is present in only a subset of samples, a corresponding vector of zeros is applied to the M1 matrix for the samples in which the junction is absent, and the M2 measurements are computed accordingly. This figure shows a perfect examples of two different LJVs.
+We also handle sample-specific junctions. If a junction is present in only a subset of samples, a corresponding vector of zeros is applied to the M1 matrix for the samples in which the junction is absent, and the M2 measurements are computed accordingly. This figure shows a perfect examples of two LJVs.
 
 ![alt text](https://github.com/Arshammik/Splicing-Pipeline/blob/main/Markdown_figure.jpg?raw=true)
 
