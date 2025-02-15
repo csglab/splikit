@@ -53,3 +53,50 @@ Subsequently, motivated by [Anna Neufeld et.al](https://arxiv.org/abs/2207.00554
 
 
 # Usage
+
+```
+SJ_object <- multigedi_make_junction_ab(STARsolo_SJ_dirs= c("./example_star_solo_outout/Solo.out/SJ/"), sample_ids=c("SMP_1"))
+```
+
+
+```
+m1_obj <- multigedi_make_m1(junction_ab_object= SJ_object)
+summary(m1_obj)
+```
+```
+                    Length Class      Mode
+m1_inclusion_matrix 663320 dgCMatrix  S4  
+event_data              13 data.table list
+```
+
+```
+m1 <- m1_obj$m1_inclusion_matrix
+```
+```
+multigedi_countsplit(m1_inclusion_matrix= m1)
+```
+
+
+```
+m2_test <- multigedi_make_m2(m1_inclusion_matrix= m1_test, eventdata=m1_obj$event_data)
+m2_train <- multigedi_make_m2(m1_inclusion_matrix= m1_train, eventdata=m1_obj$event_data)
+
+```
+
+
+
+
+```
+velocyto_obj <- multigedi_make_velo(velocyto_dirs=c("./example_star_solo_outout/Solo.out/Velocyto/"), sample_ids=c("SMP_1"))
+summary(velocyto_obj)
+```
+
+
+```
+
+multigedi_countsplit(m1_inclusion_matrix= velocyto_obj$spliced, object_names="spliced")
+multigedi_countsplit(m1_inclusion_matrix= velocyto_obj$unspliced, object_names="unsplicezd")
+
+
+```
+
