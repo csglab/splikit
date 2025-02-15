@@ -54,6 +54,11 @@ Subsequently, motivated by [Anna Neufeld et.al](https://arxiv.org/abs/2207.00554
 
 # Usage
 
+The first step of the pipeline is to make a list of junction abundance per sample and a all-in-one event data. `eventdata` is something like metadata for junctions determining the chromosome number, start and end coordinates as well as other auality and grouping metrics. This step could be done using `multigedi_make_junction_ab` with these arguments:
+
+STARsolo_SJ_dirs
+sample_ids
+
 ```
 SJ_object <- multigedi_make_junction_ab(STARsolo_SJ_dirs= c("./example_star_solo_outout/Solo.out/SJ/"), sample_ids=c("SMP_1"))
 ```
