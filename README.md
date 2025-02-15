@@ -30,6 +30,17 @@ column 9: maximum spliced alignment overhang
 We are useing the raw tab file for the junction abundace and will apply ad-hoc filtartion troughout the pipeline. For more information about how to build genome index and mapping using STAR please take a look at examples codes.
 
 
+Here's a simple flowchart
+
+```mermaid
+graph TD;
+fastqs-->STARsolo
+STARsolo-->Splicing-pipeline
+Splicing-pipeline-->GEDI-PM
+
+```
+
+
 **2. Grouping the junction abundance**
 --
 
@@ -47,40 +58,81 @@ where $J$ denotes the set of all junctions in the LJV. Such clarity is essential
 
 The grouping method is determined by whether the first or the last coordinate is used, with an appended `-E` or `-S` added to the event IDs accordingly. This approach may result in a single junction receiving two different measurements in the M2 counts (in the inclusion matrix) while having identical measurements in the M1 matrix.
 
-We also handle sample-specific junctions. If a junction is present in only a subset of samples, a corresponding vector of zeros is applied to the M1 matrix for the samples in which the junction is absent, and the M2 measurements are computed accordingly.
+We also handle sample-specific junctions. If a junction is present in only a subset of samples, a corresponding vector of zeros is applied to the M1 matrix for the samples in which the junction is absent, and the M2 measurements are computed accordingly. This figure shows a perfect examples of two different LJVs.
+
+![alt text](https://github.com/Arshammik/Splicing-Pipeline/blob/main/Frame%209%20(1).jpg?raw=true)
+
 
 Subsequently, motivated by [Anna Neufeld et.al](https://arxiv.org/abs/2207.00554) we employed a Poisson read splitting (thinning) technique to divide the raw counts into train and test data sets to address the double-dipping problem (wherein the same data set is used to generate and test a hypothesis). This was followed by a filtration of highly variable features in both modalities. 
 
 
 # Usage
 
-The first step of the pipeline is to make a list of junction abundance per sample and a all-in-one event data. `eventdata` is something like metadata for junctions determining the chromosome number, start and end coordinates as well as other auality and grouping metrics. This step could be done using `multigedi_make_junction_ab` with these arguments:
+The first step of the pipeline is to make a list of junction abundance and event data **per sample**. `eventdata` has reports for each junction and has the same number of rows as M1 and M2 matricies contaies the chromosome number, start and end coordinates as well as other quality and grouping metrics. This step could be done using `multigedi_make_junction_ab`.
+### 1. `multigedi_make_junction_ab`
 
-STARsolo_SJ_dirs
+**Example:**
+
+```r
+SJ_object <- multigedi_make_junction_ab(STARsolo_SJ_dirs= c("./example_star_solo_outout/Solo.out/SJ/"),
+                                        sample_ids=c("SMP_1"),
+                                        use_internal_whitelist = TRUE)
+```
+
+**Arguments:**
+
+
+- `STARsolo_SJ_dirs`   A character vector or list of strings representing the paths to STARsolo SJ directories. Each directory should contain the raw splicing junction output files.
 sample_ids
 
-```
-SJ_object <- multigedi_make_junction_ab(STARsolo_SJ_dirs= c("./example_star_solo_outout/Solo.out/SJ/"), sample_ids=c("SMP_1"))
-```
+- `sample_ids`   A character vector or list of unique sample IDs corresponding to each directory in `STARsolo_SJ_dirs`.(It will attached to the barcodes in the final matrices).
+
+- `use_internal_whitelist`   A logical flag (default `TRUE`) indicating whether to use the internal STARsolo whitelist located at `../Gene/filtered/barcodes.tsv` for each sample when `white_barcode_lists` is `NULL`.
+
+- `white_barcode_lists`   A list of character vectors, each containing barcode whitelist(s) for the corresponding sample. If `NULL` (default), the function uses the internal STARsolo whitelist if `use_internal_whitelist` is `TRUE`.
 
 
-```
+
+After getting the object with sample specefic junction abundance matrices and related event data you need to use `multigedi_make_m1` to get all in one M1 and eventdata.
+
+### 2. `multigedi_make_m1`
+
+**Example:**
+
+```r
 m1_obj <- multigedi_make_m1(junction_ab_object= SJ_object)
-summary(m1_obj)
-```
-```
-                    Length Class      Mode
-m1_inclusion_matrix 663320 dgCMatrix  S4  
-event_data              13 data.table list
+
+# # the out puth should be a list with two objects, one is M1 matrix and the other one should be eventdata
+# summary(m1_obj)
+# 
+# >                     Length Class      Mode
+# > m1_inclusion_matrix 663320 dgCMatrix  S4  
+# > event_data              13 data.table list
 ```
 
-```
+**Arguments:**
+- `junction_ab_object`   A named list that function `multigedi_make_junction_ab` returns where each element represents a sample's junction abundance data. Each element must contain eventdata` and a sparse matrix
+
+After obtaining M1 and the event data, you must generate an exclusion matrix, M2. If you intend to perform a count split, ensure that this operation is done prior to creating M2. This order is crucial because it guarantees that the resulting `m1_test` and `m1_train` subsets remain statistically independent. In this context, you should use the `multigedi_countsplit` function, which is essentially an integrated version of the main function from the [countsplit R package](https://github.com/anna-neufeld/countsplit/blob/develop/R/countsplit.R).
+
+### 3. `multigedi_countsplit`
+
+**Example:**
+
+```r
 m1 <- m1_obj$m1_inclusion_matrix
-```
-```
-multigedi_countsplit(m1_inclusion_matrix= m1)
-```
+multigedi_countsplit(m1_inclusion_matrix= m1,
+                    folds = 2,
+                    epsilon  = c(0.5, 0.5),
+                    object_names = "m1")
 
+```
+**Arguments:**
+
+- `m1_inclusion_matrix`   A dense or sparse  numerical matrix to be split.
+- `folds`   A positive numeric value specifying the number of folds. Default is 2.
+- `epsilon`   A numeric vector of length 2 specifying the epsilon values. Default is \code{c(0.5, 0.5)}.
+- `object_names`   A character string specifying the base name for output train/test objects. The deafult is "m1".
 
 ```
 m2_test <- multigedi_make_m2(m1_inclusion_matrix= m1_test, eventdata=m1_obj$event_data)
