@@ -60,7 +60,7 @@ The grouping method is determined by whether the first or the last coordinate is
 
 We also handle sample-specific junctions. If a junction is present in only a subset of samples, a corresponding vector of zeros is applied to the M1 matrix for the samples in which the junction is absent, and the M2 measurements are computed accordingly. This figure shows a perfect examples of two different LJVs.
 
-![alt text](https://github.com/Arshammik/Splicing-Pipeline/blob/main/Frame%209%20(1).jpg?raw=true)
+![alt text](https://github.com/Arshammik/Splicing-Pipeline/blob/main/Markdown_figure.jpg?raw=true)
 
 
 Subsequently, we employed a Poisson read splitting (thinning) technique to divide the raw counts into train and test data sets to address the double-dipping problem (wherein the same data set is used to generate and test a hypothesis). This was followed by a filtration of highly variable features in both modalities. 
