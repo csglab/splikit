@@ -123,7 +123,6 @@ multigedi_countsplit(m1_inclusion_matrix= m1,
                     folds = 2,
                     epsilon  = c(0.5, 0.5),
                     object_names = "m1")
-
 ```
 **Arguments:**
 
@@ -145,27 +144,86 @@ After performing the count splitting, derive the M2 matrix from the M1 matrix. T
 ```r
 m2_test <- multigedi_make_m2(m1_inclusion_matrix= m1_test, eventdata=m1_obj$event_data)
 m2_train <- multigedi_make_m2(m1_inclusion_matrix= m1_train, eventdata=m1_obj$event_data)
-
 ```
 
 **Arguments:**
 
 - `m1_inclusion_matrix`   A sparse matrix to be modified and used for creating the M2 matrix.
-- `eventdata`   A `data.table` containing event information with at least `group_id` and an index column.
+- `eventdata`   A data table containing event information with at least `group_id` and an index column.
 
 
+At this point, the pipeline for obtaining junction abundance measurements is complete, and you can calculate PSI values using the GEDI pan-modal tool from the M1 and M2 matrices. In addition, if you want to integrate gene expression with splicing data, it is recommended to generate the gene expression count matrix directly from the STARsolo outputs using the `multigedi_make_gene` function. This approach ensures consistency by relying on a unified mapping strategy.
 
+
+### 5. `multigedi_make_gene`
+
+**Example:**
+
+
+```r
+gene_expression <- multigedi_make_gene(expression_dirs = c("./example_star_solo_outout/Solo.out/Gene/"),
+                                       sample_ids=c("SMP_1"),
+                                       use_internal_whitelist=TRUE)
 ```
-velocyto_obj <- multigedi_make_velo(velocyto_dirs=c("./example_star_solo_outout/Solo.out/Velocyto/"), sample_ids=c("SMP_1"))
-summary(velocyto_obj)
+**Arguments:**
+
+- `expression_dirs` A character vector or list of strings representing paths to directories containing the gene expression matrix (`matrix.mtx`), barcodes, and features files.
+
+- `sample_ids`   A character vector or list of unique sample IDs corresponding to each directory in `expression_dirs`.(It will attached to the barcodes in the final matrices).
+
+- `use_internal_whitelist`   A logical flag (default `TRUE`) indicating whether to use the internal STARsolo whitelist located at `../Gene/filtered/barcodes.tsv` for each sample when `white_barcode_lists` is `NULL`.
+
+- `white_barcode_lists`   A list of character vectors, each containing barcode whitelist(s) for the corresponding sample. If `NULL` (default), the function uses the internal STARsolo whitelist if `use_internal_whitelist` is `TRUE`. Note that for the external baecodes you need to remove the number that denotes the GEM well, meaning that the `AAACCCAAGGAGAGTA-1` should turn into `AAACCCAAGGAGAGTA` for effective filtration.
+
+
+
+If STARsolo mapping was run with the option `--soloFeatures Velocyto`, the resulting output should have a structure similar to the following:
+
+```bash
+.
+├── SJ.out.tab
+└── Solo.out
+    ├── Barcodes.stats
+    ├── Gene
+    ├── GeneFull
+    ├── SJ
+    └── Velocyto
 ```
 
+Using the function `multigedi_make_velo`, you can generate inclusion and exclusion matrices for intronic and exonic reads at the gene feature level. These matrices serve a similar purpose to the M1 and M2 matrices for junction abundance.
 
+### 5. `multigedi_make_velo`
+**Example:**
+
+```r
+velocyto_obj <- multigedi_make_velo(velocyto_dirs=c("./example_star_solo_outout/Solo.out/Velocyto/"), 
+                    sample_ids=c("SMP_1"),
+                    use_internal_whitelist = TRUE,
+                    merge_counts = TRUE)
+
+# > summary(velocyto_obj)
+# >          Length    Class     Mode
+# > spliced   322344680 dgCMatrix S4  
+# > unspliced 322344680 dgCMatrix S4 
 ```
+**Arguments:**
 
-multigedi_countsplit(m1_inclusion_matrix= velocyto_obj$spliced, object_names="spliced")
-multigedi_countsplit(m1_inclusion_matrix= velocyto_obj$unspliced, object_names="unsplicezd")
+- `velocyto_dirs`   A character vector or list of strings representing paths to Velocyto directories. Each directory should contain subdirectories (`filtered` or `raw`) with required files.
 
+- `sample_ids`   A character vector or list of unique sample IDs corresponding to each directory in `velocyto_dirs`.
 
-```
+- `whitelist_barcodes` A list of character vectors, each containing barcode whitelist(s) for the corresponding sample. If `NULL` (default), the function uses the filtered barcodes file if `use_internal_whitelist` is `TRUE`.
+
+- `use_internal_whitelist` A logical flag (default `TRUE`) indicating whether to use the `filtered` data for barcode filtration. If `FALSE`, the `raw` data is used, and no barcode filtration is applied unless a whitelist is provided.
+- `merge_counts`: A logical flag that controls whether spliced and unspliced count matrices from all samples should be combined.
+  
+  - **Default:** `FALSE`
+  
+  - **When set to `TRUE`:**
+    - All spliced matrices are merged into a single large spliced matrix.
+    - All unspliced matrices are merged into a single large unspliced matrix.
+  
+  - **When set to `FALSE`:**
+    - The function returns a list where each sample is represented by two `dgCMatrix` objects: one for spliced counts and one for unspliced counts.
+
 
