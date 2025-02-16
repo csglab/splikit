@@ -128,16 +128,30 @@ multigedi_countsplit(m1_inclusion_matrix= m1,
 **Arguments:**
 
 - `m1_inclusion_matrix`   A dense or sparse  numerical matrix to be split.
-- `folds`   A positive numeric value specifying the number of folds. Default is 2.
-- `epsilon`   A numeric vector of length 2 specifying the epsilon values. Default is \code{c(0.5, 0.5)}.
+- `folds`   An integer specifying how many folds you would like to split your data into.
+- `epsilon`   epsilon A vector, which has length `folds`, that stores non-zero elements that sum to one. Determines the proportion of information from X that is allocated to each fold. Defult is `c(0.5, 0.5)`.
 - `object_names`   A character string specifying the base name for output train/test objects. The deafult is "m1".
 
-```
+There is no need to assign a variable for this command; it will automatically store the output in the `.GlobalEnv` as `object_names_test` and `object_names_train`.<br/>
+After performing the count splitting, derive the M2 matrix from the M1 matrix. This step should be executed only once for each individual M1 matrix, regardless of whether it is original, test, or training data.
+
+### 4. `multigedi_make_m2`
+
+**:warning:** This step may be memory intensive. Please ensure that an adequate amount of memory is allocated based on the size of the M1 matrix.
+
+
+**Example:**
+
+```r
 m2_test <- multigedi_make_m2(m1_inclusion_matrix= m1_test, eventdata=m1_obj$event_data)
 m2_train <- multigedi_make_m2(m1_inclusion_matrix= m1_train, eventdata=m1_obj$event_data)
 
 ```
 
+**Arguments:**
+
+- `m1_inclusion_matrix`   A sparse matrix to be modified and used for creating the M2 matrix.
+- `eventdata`   A `data.table` containing event information with at least `group_id` and an index column.
 
 
 
