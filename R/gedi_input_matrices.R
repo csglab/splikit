@@ -973,11 +973,56 @@ multigedi_get_embeddings <- function(
 
 
 
-
-
-
-
-multigedi_make_gene_eventdata <- function(eventdata, GTF_file_direction){
+#' Create Gene-Event Data by Overlapping Event Data with GTF Annotation
+#'
+#' @description
+#' This function reads in a GTF file, extracts gene annotations, and merges them with
+#' event-level genomic intervals provided by the user. The final data table contains the
+#' original event intervals and the corresponding gene information (for example, `gene_id`
+#' and `gene_name`).
+#'
+#' @details
+#' 1. Read the GTF: Uses `rtracklayer::readGFF()` to load GTF data and convert it to
+#'    a data table.
+#' 2. Subset for Genes: Keeps only rows where `type == "gene"`, retaining columns
+#'    for chromosome, start, end, strand, gene_id, and gene_name.
+#' 3. Strand Conversion: Merges the GTF data with a small lookup table to replace
+#'    `+` and `-` with numeric strand indicators `1` and `2` (matching STAR).
+#' 4. Overlaps: With both data sets keyed, uses `foverlaps()` from `data.table` to
+#'    find intervals in `eventdata` that fall fully within gene boundaries.
+#'
+#' @param eventdata A data table of genomic intervals for events. Must contain columns:
+#'   * `chr`: Chromosome name (e.g., "chr1").
+#'   * `start`: Start coordinate of the event.
+#'   * `end`: End coordinate of the event.
+#'   * `strand`: Numeric strand indicator (`1` or `2`).
+#' @param GTF_file_direction A character string specifying the path to a GTF file. The file
+#'   must contain at least these columns: `seqid`, `start`, `end`, `strand`, `gene_id`,
+#'   and `gene_name`.
+#'
+#' @return A data table containing overlapping event intervals with added gene metadata
+#'   (such as `gene_id` and `gene_name`). The columns returned will include both event-level
+#'   and gene-level information.
+#'
+#' @examples
+#' \dontrun{
+#' library(data.table)
+#' library(rtracklayer)
+#'
+#' ed <- data.table(
+#'   chr = c("chr1", "chr1"),
+#'   start = c(1000, 5000),
+#'   end = c(2000, 6000),
+#'   strand = c(1, 2)
+#' )
+#'
+#' gtf_path <- "path/to/genes.gtf"
+#' result_dt <- multigedi_make_eventdata_plus(ed, gtf_path)
+#' head(result_dt)
+#' }
+#'
+#' @export
+multigedi_make_eventdata_plus <- function(eventdata, GTF_file_direction){
   
   
   # Reading the GTF file and converting it to data table
