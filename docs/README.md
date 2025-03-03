@@ -136,7 +136,9 @@ After performing the count splitting, derive the M2 matrix from the M1 matrix. T
 
 ### 4. `multigedi_make_m2`
 
-**:warning:** This step may be memory intensive. Please ensure that an adequate amount of memory is allocated based on the size of the M1 matrix.
+
+> [!WARNING]
+> This step may be memory intensive. Please ensure that an adequate amount of memory is allocated based on the size of the M1 matrix.
 
 
 **Example:**
