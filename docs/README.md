@@ -54,9 +54,9 @@ M2_{ij} = \sum_{\substack{k \in J \\ k \neq j}} M1_{ik}
 ```
 
 
-where $J$ denotes the set of all junctions in the LJV. The grouping method is determined by whether the first or the last coordinate is used, with an appended `-E` or `-S` added to the event IDs accordingly. This approach may result in a single junction receiving two different measurements in the M2 counts (in the inclusion matrix) while having identical measurements in the M1 matrix.
+where $J$ denotes the set of all junctions in the LJV. The grouping method is determined by whether the first or the last coordinate is used, with an appended `-E` or `-S` added to the event IDs accordingly. This approach may result in a single junction receiving two different measurements in the M2 counts (in the exclusion matrix) while having identical measurements in the M1 matrix (inclusion matrix).
 
-We also handle sample-specific junctions. If a junction is present in only a subset of samples, a corresponding vector of zeros is applied to the M1 matrix for the samples in which the junction is absent, and the M2 measurements are computed accordingly. This figure shows a perfect examples of two LJVs.
+We also address sample-specific junctions. If a junction is present in only a subset of samples, a vector of zeros is assigned to the M1 matrix for the samples where the junction is absent. The M2 measurements are then computed accordingly. This figure illustrates two exemplary LJVs.
 
 ![alt text](https://github.com/Arshammik/Splicing-Pipeline/blob/main/docs/Markdown_figure.jpg?raw=true)
 
@@ -136,7 +136,9 @@ After performing the count splitting, derive the M2 matrix from the M1 matrix. T
 
 ### 4. `multigedi_make_m2`
 
-**:warning:** This step may be memory intensive. Please ensure that an adequate amount of memory is allocated based on the size of the M1 matrix.
+
+> [!WARNING]
+> This step may be memory intensive. Please ensure that an adequate amount of memory is allocated based on the size of the M1 matrix.
 
 
 **Example:**
