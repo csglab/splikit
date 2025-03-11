@@ -1066,9 +1066,93 @@ multigedi_make_eventdata_plus <- function(eventdata, GTF_file_direction){
 
 
 
+##############################################################################
+################################ get_deviance ##############################
+##############################################################################
 
 
-
+###' Calculate Deviance for Inclusion and Exclusion Matrices
+###'
+###' This function computes the deviance for inclusion and exclusion matrices by calling a precompiled C++ function. 
+###' It ensures matrices are properly formatted and compatible before proceeding.
+###'
+###' @param m1_matrix A matrix representing the inclusion matrix. Rows are events, columns are barcodes.
+###' @param m2_matrix A matrix representing the exclusion matrix. Rows are events, columns are barcodes.
+###' @param min_row_sum A numeric value specifying the minimum row sum threshold for filtering events. Defaults to 50.
+###' @param ... Additional arguments to be passed.
+###'
+###' @return A data.table containing the events and their corresponding deviance values.
+###' @export
+multigedi_get_deviance <- function(m1_matrix, m2_matrix, min_row_sum = 50, ...) {
+  
+  # Load necessary libraries
+  if (!requireNamespace("data.table", quietly = TRUE)) {
+    stop("The 'data.table' package is required but not installed.")
+  }
+  
+  if (!requireNamespace("Rcpp", quietly = TRUE)) {
+    stop("The 'Rcpp' package is required but not installed.")
+  }
+  
+  if (!requireNamespace("Matrix", quietly = TRUE)) {
+    stop("The 'Matrix' package is required but not installed.")
+  }
+  
+  # Compile the source code
+  Rcpp::sourceCpp("../src/calcDeviances.cpp")
+  
+  # Check if matrices are sparse
+  if (!(inherits(m1_matrix, "Matrix") && inherits(m2_matrix, "Matrix"))) {
+    stop("Both 'm1_matrix' and 'm2_matrix' must be sparse matrices of class 'Matrix'.")
+  }
+  
+  # Check matrix compatibility
+  if (!identical(colnames(m1_matrix), colnames(m2_matrix))) {
+    stop("The colnames (barcodes) of inclusion and exclusion matrices are not identical.")
+  }
+  
+  if (!identical(rownames(m1_matrix), rownames(m2_matrix))) {
+    stop("The rownames (junction events) of inclusion and exclusion matrices are not identical.")
+  }
+  
+  # Filter rows based on minimum row sum criteria
+  to_keep_events <- which(rowSums(m1_matrix) > min_row_sum & rowSums(m2_matrix) > min_row_sum)
+  m1_matrix <- m1_matrix[to_keep_events, , drop = FALSE]
+  m2_matrix <- m2_matrix[to_keep_events, , drop = FALSE]
+  
+  # Create metadata table
+  temp_current_barcodes <- data.table::data.table(brc = colnames(m1_matrix))
+  temp_current_barcodes$ID <- sub("^.{16}-(.*$)", "\\1", temp_current_barcodes$brc)
+  meta <- temp_current_barcodes
+  
+  libraries <- unique(meta$ID)
+  cat("There are", length(libraries), "libraries detected...\n")
+  
+  # Initialize deviance sum vector
+  sum_deviances <- numeric(nrow(m1_matrix))
+  names(sum_deviances) <- rownames(m1_matrix)
+  
+  for (lib in libraries) {
+    filter <- which(meta[, ID] == lib)
+    M1_sub <- m1_matrix[, filter, drop = FALSE]
+    M2_sub <- m2_matrix[, filter, drop = FALSE]
+    
+    # Calculate deviances using the C++ function
+    deviance_values <- tryCatch({
+      calcDeviances(M1_sub, M2_sub)
+    }, error = function(e) {
+      stop("Error in calcDeviances function: ", e$message)
+    })
+    
+    deviance_values <- c(deviance_values)
+    names(deviance_values) <- rownames(M1_sub)
+    sum_deviances <- sum_deviances + deviance_values
+    cat("Calculating the deviances for sample", lib, "has been completed!\n")
+  }
+  
+  rez <- data.table::data.table(events = names(sum_deviances), sum_deviance = as.numeric(sum_deviances))
+  return(rez)
+}
 
 
 
