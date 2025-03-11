@@ -8,7 +8,7 @@ This pipeline provides a streamlined approach for processing and analyzing splic
 ---
 - Unix-compatible OS.  
 - [R version 3.0.0](http://www.r-project.org/) or later. 
-- R libraries: [Matrix](https://cran.r-project.org/web/packages/Matrix/index.html), [data.table](https://cran.r-project.org/web/packages/data.table/index.html), [dplyr](https://cran.r-project.org/web/packages/dplyr/index.html), [countsplit](https://cran.r-project.org/web/packages/countsplit/index.html), [rtracklayer](https://bioconductor.org/packages/release/bioc/html/rtracklayer.html)
+- R libraries: [Rcpp](https://cran.r-project.org/web/packages/Rcpp/index.html), [Matrix](https://cran.r-project.org/web/packages/Matrix/index.html), [data.table](https://cran.r-project.org/web/packages/data.table/index.html), [dplyr](https://cran.r-project.org/web/packages/dplyr/index.html), [countsplit](https://cran.r-project.org/web/packages/countsplit/index.html), [rtracklayer](https://bioconductor.org/packages/release/bioc/html/rtracklayer.html)
 
 ### **Key Functions**  
 ---
