@@ -1158,6 +1158,236 @@ multigedi_get_deviance <- function(m1_matrix, m2_matrix, min_row_sum = 50, ...) 
 
 
 
+##############################################################################
+################################ fast_row_var ##############################
+##############################################################################
+
+#' Calculate Row Variance for a Sparse Matrix
+#'
+#' @description
+#' This function calculates the row variance for a given sparse matrix by calling a C++ function via Rcpp.
+#'
+#' @param sparse_matrix A sparse matrix (of class \code{Matrix}) for which row variances are computed.
+#' @param return_vector Logical. If \code{TRUE}, returns a numeric vector of variances; if \code{FALSE}, returns a \code{data.table} with row names and variances. Default is \code{TRUE}.
+#' @param ... Additional parameters (currently not used).
+#'
+#' @return A numeric vector of row variances if \code{return_vector = TRUE}, otherwise a \code{data.table} with columns \code{features} (row names) and \code{rowVar} (variance values).
+#'
+#' @details
+#' This function sources the C++ code from \code{./src/row_variance.cpp} using \code{Rcpp::sourceCpp} and calls the C++ function \code{get_row_variance}. Ensure that the C++ source file exists and contains the exported function using the \code{// [[Rcpp::export]]} tag.
+#'
+#' @examples
+#' \dontrun{
+#'   library(Matrix)
+#'   # Create a sparse matrix
+#'   m <- Matrix::rsparsematrix(100, 10, density = 0.1)
+#'   # Calculate row variances as a vector
+#'   row_var <- multigedi_get_row_variance(m)
+#'
+#'   # Calculate row variances as a data.table
+#'   row_var_dt <- multigedi_get_row_variance(m, return_vector = FALSE)
+#' }
+#'
+#' @export
+multigedi_get_row_variance <- function(sparse_matrix, return_vector = TRUE, ...) {
+  
+  # Error control: Check for necessary package and class
+  if (!requireNamespace("Rcpp", quietly = TRUE)) {
+    stop("The 'Rcpp' package is required but not installed.")
+  }
+  
+  if (!inherits(sparse_matrix, "Matrix")) {
+    stop("Input 'sparse_matrix' must be of class 'Matrix'.")
+  }
+  
+  # Define the C++ source file path
+  cpp_source_path <- "./src/row_variance.cpp"
+  if (!file.exists(cpp_source_path)) {
+    stop("The C++ source file does not exist at the specified path: ", cpp_source_path)
+  }
+  
+  # Source the C++ code with error handling
+  tryCatch({
+    Rcpp::sourceCpp(cpp_source_path, verbose = FALSE)
+  }, error = function(e) {
+    stop("Error sourcing the C++ code from '", cpp_source_path, "': ", e$message)
+  })
+  
+  # Call the C++ function to compute row variances
+  rez <- tryCatch({
+    get_row_variance(M = sparse_matrix)
+  }, error = function(e) {
+    stop("Error calling the C++ function 'get_row_variance': ", e$message)
+  })
+  
+  # Return the result in the desired format
+  if (return_vector) {
+    return(rez[, 1])
+  } else {
+    if (is.null(rownames(sparse_matrix))) {
+      stop("Row names are missing in 'sparse_matrix'. They are required when 'return_vector' is FALSE.")
+    }
+    rez_dt <- data.table::data.table(features = rownames(sparse_matrix), rowVar = rez[, 1])
+    return(rez_dt)
+  }
+}
+
+
+
+
+
+##################################################################################
+################################ find varible genes ##############################
+##################################################################################
+
+#' Find Variable Genes Using Deviance and Variance Metrics
+#'
+#' @description
+#' This function identifies variable genes from a sparse gene expression matrix.
+#' It provides two methods: a Seurat-like standardization approach or a deviance-based method
+#' calculated per library. The deviance method includes filtering low-count genes, calculating
+#' negative binomial deviances per library, and combining these with a row variance metric computed
+#' via a C++ function.
+#'
+#' @param gene_expression_matrix A sparse gene expression matrix (of class \code{Matrix}) with gene names as row names.
+#' @param like_seurat Logical. If \code{TRUE}, uses a Seurat-like method (via \code{standardizeSparse_variance_loess}).
+#'   If \code{FALSE} (default), uses a deviance-based approach.
+#' @param ... Additional parameters (currently not used).
+#'
+#' @return A \code{data.table} containing the gene names (column \code{events}) and the computed metrics.
+#'   For the deviance method, the output contains columns \code{sum_deviance} and \code{variance}.
+#'
+#' @details
+#' When \code{like_seurat = TRUE}, the function calls the C++ function \code{standardizeSparse_variance_loess}
+#' to compute a standardized variance vector for the genes. When \code{like_seurat = FALSE}, the function:
+#' \enumerate{
+#'   \item Filters out genes with zero row sum.
+#'   \item Parses library IDs from the column names of the gene expression matrix.
+#'   \item Loops over each library and computes negative binomial deviances using the C++ function
+#'         \code{calcNBDeviancesWithThetaEstimation}.
+#'   \item Computes row variance using \code{multigedi_get_row_variance}.
+#'   \item Merges the deviance and variance information into a single \code{data.table}.
+#' }
+#'
+#' The function sources required C++ files \code{deviance_gene.cpp} and \code{hvf_gene_expression.cpp}.
+#' Ensure that these files exist in the \code{./src/} directory and contain the appropriate
+#' \code{// [[Rcpp::export]]} tags.
+#'
+#' @examples
+#' \dontrun{
+#'   library(Matrix)
+#'   library(data.table)
+#'   # Create a sample sparse gene expression matrix
+#'   gene_expression_matrix <- Matrix::rsparsematrix(100, 10, density = 0.1)
+#'   # Use the deviance-based method
+#'   result <- multigedi_find_variable_genes(gene_expression_matrix)
+#'   # Alternatively, use the Seurat-like method
+#'   result_seurat <- multigedi_find_variable_genes(gene_expression_matrix, like_seurat = TRUE)
+#' }
+#'
+#' @export
+multigedi_find_variable_genes <- function(gene_expression_matrix, like_seurat = FALSE, ...) {
+  
+  # Check required libraries
+  if (!requireNamespace("data.table", quietly = TRUE)) {
+    stop("The 'data.table' package is required but not installed.")
+  }
+  if (!requireNamespace("Rcpp", quietly = TRUE)) {
+    stop("The 'Rcpp' package is required but not installed.")
+  }
+  if (!requireNamespace("Matrix", quietly = TRUE)) {
+    stop("The 'Matrix' package is required but not installed.")
+  }
+  
+  # Verify that gene_expression_matrix is a sparse Matrix
+  if (!inherits(gene_expression_matrix, "Matrix")) {
+    stop("The 'gene_expression_matrix' must be a sparse matrix of class 'Matrix'.")
+  }
+  
+  # Source necessary C++ files for deviance and gene expression functions
+  cpp_files <- c("./src/deviance_gene.cpp", "./src/hvf_gene_expression.cpp")
+  for (cpp_file in cpp_files) {
+    if (!file.exists(cpp_file)) {
+      stop("The C++ source file does not exist: ", cpp_file)
+    }
+    tryCatch({
+      Rcpp::sourceCpp(cpp_file, verbose = FALSE)
+    }, error = function(e) {
+      stop("Error sourcing the C++ file '", cpp_file, "': ", e$message)
+    })
+  }
+  
+  if (like_seurat) {
+    cat("The method we are using is like Seurat...\n")
+    if (!exists("standardizeSparse_variance_loess")) {
+      stop("The function 'standardizeSparse_variance_loess' is not available. Check your C++ source files.")
+    }
+    rez_vector <- tryCatch({
+      standardizeSparse_variance_loess(X = gene_expression_matrix)
+    }, error = function(e) {
+      stop("Error in standardizeSparse_variance_loess: ", e$message)
+    })
+    rez <- data.table::data.table(events = rownames(gene_expression_matrix),
+                                  standardize_variance = rez_vector)
+  } else {
+    cat("The method we are using is like deviance summarion per library...\n")
+    
+    # Filter rows based on minimum row sum criteria
+    to_keep_features <- which(rowSums(gene_expression_matrix) > 0)
+    if (length(to_keep_features) == 0) {
+      stop("No genes with a positive row sum were found.")
+    }
+    gene_expression_matrix <- gene_expression_matrix[to_keep_features, , drop = FALSE]
+    
+    # Create metadata table using column names
+    temp_current_barcodes <- data.table::data.table(brc = colnames(gene_expression_matrix))
+    temp_current_barcodes$ID <- sub("^.{16}-(.*$)", "\\1", temp_current_barcodes$brc)
+    meta <- temp_current_barcodes
+    
+    libraries <- unique(meta$ID)
+    cat("There are", length(libraries), "libraries detected...\n")
+    
+    # Initialize deviance sum vector with gene names
+    sum_deviances <- numeric(nrow(gene_expression_matrix))
+    names(sum_deviances) <- rownames(gene_expression_matrix)
+    
+    # Loop over each library to compute deviances
+    for (lib in libraries) {
+      filter <- which(meta[, ID] == lib)
+      gene_expression_matrix_sub <- gene_expression_matrix[, filter, drop = FALSE]
+      
+      # Calculate deviances using the C++ function
+      deviance_values <- tryCatch({
+        calcNBDeviancesWithThetaEstimation(gene_expression_matrix_sub)
+      }, error = function(e) {
+        stop("Error in calcNBDeviancesWithThetaEstimation function: ", e$message)
+      })
+      
+      deviance_values <- c(deviance_values)
+      names(deviance_values) <- rownames(gene_expression_matrix_sub)
+      sum_deviances <- sum_deviances + deviance_values
+      cat("Calculating the deviances for sample", lib, "has been completed!\n")
+    }
+    
+    # Compute row variance using the previously defined function
+    row_var <- tryCatch({
+      multigedi_get_row_variance(sparse_matrix = gene_expression_matrix)
+    }, error = function(e) {
+      stop("Error in multigedi_get_row_variance: ", e$message)
+    })
+    
+    row_var_cpp_dt <- data.table::data.table(events = rownames(gene_expression_matrix),
+                                             variance = row_var)
+    
+    rez <- data.table::data.table(events = names(sum_deviances),
+                                  sum_deviance = as.numeric(sum_deviances))
+    rez <- base::merge(rez, row_var_cpp_dt, by = "events")
+    data.table::setkey(x = rez, NULL)
+  }
+  
+  return(rez)
+}
+
 
 
 
