@@ -17,7 +17,7 @@ using namespace Rcpp;
 //' M <- rsparsematrix(1000, 500, density = 0.05) * 10
 //' row_variances <- rowVarsSparseFast(M)
 // [[Rcpp::export]]
-arma::vec multigedi_get_row_variance(const arma::sp_mat& M) {
+arma::vec get_row_variance(const arma::sp_mat& M) {
   int n_rows = M.n_rows;
   int n_cols = M.n_cols;
   
