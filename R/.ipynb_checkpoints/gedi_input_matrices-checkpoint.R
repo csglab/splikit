@@ -1052,7 +1052,7 @@ multigedi_make_eventdata_plus <- function(eventdata, GTF_file_direction) {
   
   # Convert strand from + / - to 1 / 2
   temp_change_strand_dt <- data.table::data.table(new_strand = c(1, 2), strand = c("+", "-"))
-  ref_gtf <- data.table::merge(ref_gtf, temp_change_strand_dt, by = "strand", sort = FALSE)
+  ref_gtf <- base::merge(ref_gtf, temp_change_strand_dt, by = "strand", sort = FALSE)
   
   # Replace old strand with numeric one
   ref_gtf[, strand := NULL]
