@@ -1068,7 +1068,7 @@ multigedi_make_eventdata_plus <- function(eventdata, GTF_file_direction) {
   
   # Perform overlap
   new_eventdata <- data.table::foverlaps(eventdata, ref_gtf, type = "within")
-  new_eventdata <- data.table::na.omit(new_eventdata)
+  new_eventdata <- na.omit(new_eventdata)
   
   return(new_eventdata)
 }
@@ -1109,7 +1109,7 @@ multigedi_get_deviance <- function(m1_matrix, m2_matrix, min_row_sum = 50, ...) 
   }
   
   # Compile the source code
-  Rcpp::sourceCpp("../src/calcDeviances.cpp")
+  Rcpp::sourceCpp("./src/calcDeviances.cpp")
   
   # Check if matrices are sparse
   if (!(inherits(m1_matrix, "Matrix") && inherits(m2_matrix, "Matrix"))) {
