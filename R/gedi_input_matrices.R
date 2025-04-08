@@ -1093,7 +1093,7 @@ multigedi_make_eventdata_plus <- function(eventdata, GTF_file_direction) {
 ###'
 ###' @return A data.table containing the events and their corresponding deviance values.
 ###' @export
-multigedi_get_deviance <- function(m1_matrix, m2_matrix, min_row_sum = 50, ...) {
+multigedi_get_deviance <- function(m1_matrix, m2_matrix, min_row_sum = 50, verbose=TRUE, ...) {
   
   # Load necessary libraries
   if (!requireNamespace("data.table", quietly = TRUE)) {
@@ -1157,11 +1157,12 @@ multigedi_get_deviance <- function(m1_matrix, m2_matrix, min_row_sum = 50, ...) 
     deviance_values <- c(deviance_values)
     names(deviance_values) <- rownames(M1_sub)
     sum_deviances <- sum_deviances + deviance_values
-    cat("Calculating the deviances for sample", lib, "has been completed!\n")
+    if(verbose){cat("Calculating the deviances for sample", lib, "has been completed!\n")}
   }
   
   rez <- data.table::data.table(events = names(sum_deviances), sum_deviance = as.numeric(sum_deviances))
   return(rez)
+  cat("All Done!\n")
 }
 
 
