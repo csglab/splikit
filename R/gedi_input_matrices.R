@@ -190,7 +190,7 @@ multigedi_make_junction_ab <- function(STARsolo_SJ_dirs, white_barcode_lists = N
 #' This function processes junction abundance data from multiple samples to create a splicing modality inclusion matrix (M1).
 #' It merges event data, handles start and end coordinate groups, ensures matrix compatibility, and includes robust error handling.
 #'
-#' The function requires the following libraries: `dplyr`, `data.table`, and `Matrix`.
+#' The function requires the following libraries: `data.table`, and `Matrix`.
 #'
 #' @param junction_ab_object A named list where each element represents a sample's junction abundance data. 
 #'                           Each element must contain `eventdata` and a sparse matrix.
@@ -225,7 +225,7 @@ multigedi_make_m1 <- function(junction_ab_object) {
   # loading required libraries
   load_libraries_for_m1 <- function() {
     # List of required libraries
-    libraries <- c("data.table", "dplyr", "Matrix")
+    libraries <- c("data.table", "Matrix")
     
     # Attempt to load each library and handle errors
     results <- sapply(libraries, function(lib) {
@@ -242,16 +242,22 @@ multigedi_make_m1 <- function(junction_ab_object) {
   all_in_one_eventdata[, sample_id := NULL]
   temp_eventdata <- all_in_one_eventdata[match(all_junctions, row_names_mtx), ]
   
-  # grouping based on first and last coordinates
-  temp_eventdata_grouped <- temp_eventdata %>% 
-    group_by(start_cor_id) %>% 
-    mutate(start_cor_group_id = cur_group_id()) %>% 
-    mutate(start_cor_group_count = n()) %>% 
-    ungroup() %>% 
-    group_by(end_cor_id) %>% 
-    mutate(end_cor_group_id = cur_group_id()) %>% 
-    mutate(end_cor_group_count = n()) %>%
-    as.data.table()
+  # grouping based on first and last coordinates using data.table
+  if (!is.data.table(temp_eventdata)) {
+    setDT(temp_eventdata)
+  }
+  
+  temp_eventdata[, `:=`(
+    start_cor_group_id = .GRP,
+    start_cor_group_count = .N
+  ), by = start_cor_id]
+  
+  temp_eventdata[, `:=`(
+    end_cor_group_id = .GRP,
+    end_cor_group_count = .N
+  ), by = end_cor_id]
+  
+  temp_eventdata_grouped <- temp_eventdata
   
   # creating the event data for start coordinates groups
   temp_eventdata_grouped_start <- data.table::copy(temp_eventdata_grouped)
@@ -273,18 +279,14 @@ multigedi_make_m1 <- function(junction_ab_object) {
            old = c("row_names_mtx", "row_names_mtx_new"), 
            new = c("raw_row_names_mtx", "row_names_mtx"))
   
-
   # Combine start and end groups
   if(ncol(temp_eventdata_grouped_end) == ncol(temp_eventdata_grouped_start)){
-    
     colnames(temp_eventdata_grouped_end) <- colnames(temp_eventdata_grouped_start)
     eventdata <- rbind(temp_eventdata_grouped_start, temp_eventdata_grouped_end)
-    
-  }else{
-    
+  } else {
     stop("The eventdata for start and end grouping have not the equal numbner of columns")
   }
-
+  
   # Rename columns for clarity
   setnames(x = eventdata, 
            old = c("start_cor_group_id", "start_cor_group_count"), 
@@ -359,6 +361,7 @@ multigedi_make_m1 <- function(junction_ab_object) {
     event_data = eventdata
   ))
 }
+
 
 
 
