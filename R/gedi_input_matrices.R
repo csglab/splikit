@@ -1,15 +1,9 @@
 #' @include generics.R
 #'
 NULL
-
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Functions
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-#######################################################################
-###################### junction abundance #############################
-#######################################################################
-
 
 #' multigedi_make_junction_ab
 #'
@@ -178,12 +172,6 @@ multigedi_make_junction_ab <- function(STARsolo_SJ_dirs, white_barcode_lists = N
   names(final_results) <- unlist(sample_ids)
   return(final_results)
 }
-
-
-
-#######################################################################
-######################### make M1 #####################################
-#######################################################################
 
 #' multigedi_make_m1
 #'
@@ -362,14 +350,6 @@ multigedi_make_m1 <- function(junction_ab_object) {
   ))
 }
 
-
-
-
-
-#######################################################################
-##################### Gene expression #################################
-#######################################################################
-
 #' multigedi_make_gene
 #'
 #' This function processes gene expression data from a given directory and creates a sparse matrix
@@ -508,14 +488,6 @@ multigedi_make_gene <- function(expression_dirs, sample_ids, whitelist_barcodes 
     return(final_results)
   }
 }
-
-
-
-
-
-#######################################################################
-################################ Velocyto #############################
-#######################################################################
 
 #' multigedi_make_velo
 #'
@@ -766,13 +738,6 @@ multigedi_countsplit <- function(m1_inclusion_matrix, folds = 2, epsilon = c(0.5
   })
 }
 
-
-
-
-#######################################################################
-################################ make M2 ##############################
-#######################################################################
-
 #' multigedi_make_m2
 #'
 #' Creates the M2 matrix from a given m1_inclusion_matrix and eventdata, ensuring the proper processing of group indices and matrix operations.
@@ -808,7 +773,7 @@ multigedi_make_m2 <- function(m1_inclusion_matrix, eventdata) {
   dummy <- Matrix(data = 1, ncol = ncol(m1_inclusion_matrix), nrow = 1, sparse = TRUE, dimnames = list("dummy", colnames(m1_inclusion_matrix)))
   m1_inclusion_matrix <- rbind(m1_inclusion_matrix, dummy)
   
-  message("Step 1 | Modifying the m1_inclusion_matrix")
+  cat("┌── Step 1 | Modifying the m1_inclusion_matrix\n")
   
   # Add dummy group to group_ids
   dummy_group <- data.table(i = nrow(m1_inclusion_matrix), group_id = 'dummy')
@@ -821,7 +786,7 @@ multigedi_make_m2 <- function(m1_inclusion_matrix, eventdata) {
   num_cells <- ncol(m1_inclusion_matrix)
   groups_start_vector <- eventdata[, unique(group_id)]
   
-  message("Step 2 | Creating M2")
+  cat("├── Step 2 | Creating M2\n")
   
   # Convert m1_inclusion_matrix to data.table
   m1 <- summary(m1_inclusion_matrix) %>% as.data.table()
@@ -841,8 +806,8 @@ multigedi_make_m2 <- function(m1_inclusion_matrix, eventdata) {
   
   # Create sparse matrix for M2_train
   M2_train <- m_tot[, sparseMatrix(i = i, j = j, x = x_2)]
-  
-  message("Step 3 | Finalizing M2 creation")
+
+  cat("├── Step 3 | Finalizing M2 creation\n")
   
   # Set row and column names
   rownames(M2_train) <- rownames(m1_inclusion_matrix)
@@ -851,11 +816,9 @@ multigedi_make_m2 <- function(m1_inclusion_matrix, eventdata) {
   # Remove dummy row from M2_train
   M2 <- M2_train[-nrow(M2_train), ]
   
-  message("All done!")
+  cat("└── All done!")
   return(M2)
 }
-
-
 
 #' Create Gene-Event Data by Overlapping Event Data with GTF Annotation
 #'
@@ -908,7 +871,7 @@ multigedi_make_m2 <- function(m1_inclusion_matrix, eventdata) {
 multigedi_make_eventdata_plus <- function(eventdata, GTF_file_direction) {
   
   # Read GTF file as plain text using fread
-  GTF <- fread(
+  GTF <- data.table::fread(
     GTF_file_direction,
     col.names = c("seqid", "source", "type", "start", "end", "score", "strand", "phase", "attribute"),
     sep = "\t",
@@ -942,22 +905,15 @@ multigedi_make_eventdata_plus <- function(eventdata, GTF_file_direction) {
   eventdata[!grepl("^chr", chr), chr := paste0("chr", chr)]
   
   # Set keys for foverlaps
-  setkey(eventdata, chr, strand, start, end)
-  setkey(ref_gtf, chr, strand, start, end)
+  data.table::setkey(eventdata, chr, strand, start, end)
+  data.table::setkey(ref_gtf, chr, strand, start, end)
   
   # Overlap join
-  new_eventdata <- foverlaps(eventdata, ref_gtf, type = "within")
+  new_eventdata <- data.table::foverlaps(eventdata, ref_gtf, type = "within")
   new_eventdata <- na.omit(new_eventdata)
   
   return(new_eventdata)
 }
-
-
-
-##############################################################################
-################################ get_deviance ##############################
-##############################################################################
-
 
 ###' Calculate Deviance for Inclusion and Exclusion Matrices
 ###'
@@ -1043,14 +999,6 @@ multigedi_get_deviance <- function(m1_matrix, m2_matrix, min_row_sum = 50, verbo
   cat("All Done!\n")
 }
 
-
-
-
-
-##############################################################################
-################################ fast_row_var ##############################
-##############################################################################
-
 #' Calculate Row Variance for a Sparse Matrix
 #'
 #' @description
@@ -1120,14 +1068,6 @@ multigedi_get_row_variance <- function(sparse_matrix, return_vector = TRUE, ...)
     return(rez_dt)
   }
 }
-
-
-
-
-
-##################################################################################
-################################ find varible genes ##############################
-##################################################################################
 
 #' Find Variable Genes Using Deviance and Variance Metrics
 #'
@@ -1276,9 +1216,3 @@ multigedi_find_variable_genes <- function(gene_expression_matrix, like_seurat = 
   
   return(rez)
 }
-
-
-
-
-
-
