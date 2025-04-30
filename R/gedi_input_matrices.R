@@ -789,13 +789,13 @@ multigedi_make_m2 <- function(m1_inclusion_matrix, eventdata) {
   cat("├── Step 2 | Creating M2\n")
   
   # Convert m1_inclusion_matrix to data.table
-  m1 <- summary(m1_inclusion_matrix) %>% as.data.table()
+  m1 <- summary(m1_inclusion_matrix) |> as.data.table()
   setnames(m1, 'x', 'x_1')
   
   # Merge group information
   m1 <- merge(m1, group_ids, by = 'i')
   m1[, x_tot := sum(x_1), .(group_id, j)]
-  m_tot <- m1[, .(group_id, j, x_tot)] %>% unique()
+  m_tot <- m1[, .(group_id, j, x_tot)] |> unique()
   
   # Filter and merge relevant data
   m_tot <- m_tot[x_tot > 0]
