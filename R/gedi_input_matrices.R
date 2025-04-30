@@ -866,7 +866,7 @@ multigedi_make_m2 <- function(m1_inclusion_matrix, eventdata) {
 #' and `gene_name`).
 #'
 #' @details
-#' 1. Read the GTF: Uses `rtracklayer::readGFF()` to load GTF data and convert it to
+#' 1. Read the GTF: Uses `data.table::fread` to load GTF data and convert it to
 #'    a data table.
 #' 2. Subset for Genes: Keeps only rows where `type == "gene"`, retaining columns
 #'    for chromosome, start, end, strand, gene_id, and gene_name.
@@ -891,7 +891,6 @@ multigedi_make_m2 <- function(m1_inclusion_matrix, eventdata) {
 #' @examples
 #' \dontrun{
 #' library(data.table)
-#' library(rtracklayer)
 #'
 #' ed <- data.table(
 #'   chr = c("chr1", "chr1"),
@@ -908,55 +907,50 @@ multigedi_make_m2 <- function(m1_inclusion_matrix, eventdata) {
 #' @export
 multigedi_make_eventdata_plus <- function(eventdata, GTF_file_direction) {
   
-  # Ensure necessary libraries are installed
-  if (!requireNamespace("data.table", quietly = TRUE)) {
-    install.packages("data.table")
-  }
-  if (!requireNamespace("rtracklayer", quietly = TRUE)) {
-    BiocManager::install("rtracklayer")
-  }
-
-  
-  # Read GTF file and convert to data.table
-  GTF <- rtracklayer::readGFF(GTF_file_direction)
-  GTF <- data.table::as.data.table(GTF)
+  # Read GTF file as plain text using fread
+  GTF <- fread(
+    GTF_file_direction,
+    col.names = c("seqid", "source", "type", "start", "end", "score", "strand", "phase", "attribute"),
+    sep = "\t",
+    header = FALSE,
+    quote = "", 
+    showProgress = FALSE
+  )
   
   # Filter for 'gene' entries
-  ref_gtf <- GTF[GTF$type == "gene", ]
+  ref_gtf <- GTF[type == "gene"]
   
-  # Select needed columns
-  ref_gtf <- ref_gtf[, .(seqid, start, end, strand, gene_id, gene_name)]
+  # Extract gene_id and gene_name from the attribute column
+  ref_gtf[, gene_id := sub('.*gene_id "([^"]+)".*', '\\1', attribute)]
+  ref_gtf[, gene_name := sub('.*gene_name "([^"]+)".*', '\\1', attribute)]
   
-  # Rename seqid to chr and ensure character type
-  data.table::setnames(ref_gtf, "seqid", "chr")
-  ref_gtf[, chr := as.character(chr)]
+  # Select and rename relevant columns
+  ref_gtf <- ref_gtf[, .(chr = seqid, start, end, strand, gene_id, gene_name)]
   
   # Add 'chr' prefix if missing
   ref_gtf[!grepl("^chr", chr), chr := paste0("chr", chr)]
+  ref_gtf[, chr := as.character(chr)]
   
   # Convert strand from + / - to 1 / 2
-  temp_change_strand_dt <- data.table::data.table(new_strand = c(1, 2), strand = c("+", "-"))
-  ref_gtf <- base::merge(ref_gtf, temp_change_strand_dt, by = "strand", sort = FALSE)
-  
-  # Replace old strand with numeric one
+  strand_map <- data.table(strand = c("+", "-"), new_strand = c(1, 2))
+  ref_gtf <- merge(ref_gtf, strand_map, by = "strand", sort = FALSE)
   ref_gtf[, strand := NULL]
-  data.table::setnames(ref_gtf, "new_strand", "strand")
+  setnames(ref_gtf, "new_strand", "strand")
   
-  # Standardize eventdata chr column
+  # Prepare eventdata
   eventdata[, chr := as.character(chr)]
   eventdata[!grepl("^chr", chr), chr := paste0("chr", chr)]
   
   # Set keys for foverlaps
-  data.table::setkey(eventdata, chr, strand, start, end)
-  data.table::setkey(ref_gtf, chr, strand, start, end)
+  setkey(eventdata, chr, strand, start, end)
+  setkey(ref_gtf, chr, strand, start, end)
   
-  # Perform overlap
-  new_eventdata <- data.table::foverlaps(eventdata, ref_gtf, type = "within")
+  # Overlap join
+  new_eventdata <- foverlaps(eventdata, ref_gtf, type = "within")
   new_eventdata <- na.omit(new_eventdata)
   
   return(new_eventdata)
 }
-
 
 
 
