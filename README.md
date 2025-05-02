@@ -1,4 +1,4 @@
-# Splikit <img src="/docs/logo.png" align="right" height="200"/></a>
+# Splikit <img src="/docs/logo.png" align="right" height="220"/></a>
 
 **Splikit** /ˈsplaɪ.kɪt/ is a toolkit designed for the analysis of high-dimensional single-cell
 splicing data. It provides a framework to extract and work with ratio-based data structures
@@ -10,6 +10,6 @@ are implemented in C++ via Rcpp to ensure high performance and scalability on la
 
 ### **Requirments**
 
--   Unix-compatible OS.\
+-   Unix-compatible OS.
 -   [R version 3.0.0](http://www.r-project.org/) or later.
 -   R libraries: [Rcpp](https://cran.r-project.org/web/packages/Rcpp/index.html), [RcppArmadillo](https://cran.r-project.org/web/packages/RcppArmadillo/index.html), [Matrix](https://cran.r-project.org/web/packages/Matrix/index.html), [data.table](https://cran.r-project.org/web/packages/data.table/index.html)
