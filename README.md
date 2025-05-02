@@ -1,4 +1,4 @@
-# Splikit <img src="/docs/logo.png" align="right" height="220"/></a>
+# Splikit <img src="/docs/splikit_logo.png" align="right" height="220"/></a>
 
 **Splikit** /ˈsplaɪ.kɪt/ is a toolkit designed for the analysis of high-dimensional single-cell
 splicing data. It provides a framework to extract and work with ratio-based data structures
