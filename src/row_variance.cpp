@@ -1,45 +1,68 @@
-#define ARMA_64BIT_WORD
-#include <RcppArmadillo.h>
-// [[Rcpp::depends(RcppArmadillo)]]
-
+#include <Rcpp.h>
 using namespace Rcpp;
 
-//' Fast Computation of Row Variances for a Sparse Matrix
-//' 
-//' This function computes the variance for each row of a sparse matrix using a
-//' single pass over the nonzero elements by iterating in column-major order.
-//'
-//' @param M A sparse matrix (dgCMatrix) of gene expression counts.
-//' @return A numeric vector with the variance for each row.
-//' @examples
-//' library(Matrix)
-//' set.seed(42)
-//' M <- rsparsematrix(1000, 500, density = 0.05) * 10
-//' row_variances <- rowVarsSparseFast(M)
 // [[Rcpp::export]]
-arma::vec get_row_variance(const arma::sp_mat& M) {
-  int n_rows = M.n_rows;
-  int n_cols = M.n_cols;
-  
-  // Preallocate vectors for row sums and row squared sums.
-  arma::vec row_sum(n_rows, arma::fill::zeros);
-  arma::vec row_sum2(n_rows, arma::fill::zeros);
-  
-  // Loop over columns (efficient for CSC storage).
-  for (arma::sp_mat::const_iterator it = M.begin();
-       it != M.end(); ++it) {
-    int i = it.row();  // row index of the nonzero element
-    double value = *it;
-    row_sum[i] += value;
-    row_sum2[i] += value * value;
+NumericVector rowVariance_cpp(SEXP mat) {
+  Rcout << "[rowVariance_cpp] Entering function\n";
+
+  // Dense matrix path
+  if (Rf_isMatrix(mat) && TYPEOF(mat) == REALSXP) {
+    NumericMatrix M(mat);
+    int nrow = M.nrow(), ncol = M.ncol();
+    Rcout << "[rowVariance_cpp] Detected dense matrix: "
+          << nrow << "×" << ncol << "\n";
+
+    NumericVector out(nrow);
+    for (int i = 0; i < nrow; ++i) {
+      double sum = 0.0, sum2 = 0.0;
+      for (int j = 0; j < ncol; ++j) {
+        double v = M(i, j);
+        sum  += v;
+        sum2 += v * v;
+      }
+      double mean = sum / ncol;
+      out[i] = sum2 / ncol - mean * mean;
+    }
+
+    Rcout << "[rowVariance_cpp] Dense computation complete\n";
+    return out;
   }
-  
-  // Compute the variance for each row.
-  arma::vec variances(n_rows, arma::fill::zeros);
-  for (int i = 0; i < n_rows; i++) {
-    double mean = row_sum[i] / n_cols;
-    variances[i] = row_sum2[i] / n_cols - mean * mean;
+
+  // Sparse matrix path (dgCMatrix)
+  if (Rf_isS4(mat) && Rf_inherits(mat, "dgCMatrix")) {
+    S4 M(mat);
+    IntegerVector dims = M.slot("Dim");
+    IntegerVector i     = M.slot("i");
+    IntegerVector p     = M.slot("p");
+    NumericVector x     = M.slot("x");
+
+    int nrow = dims[0], ncol = dims[1];
+    Rcout << "[rowVariance_cpp] Detected sparse dgCMatrix: "
+          << nrow << "×" << ncol << "\n";
+
+    NumericVector rowSum(nrow, 0.0), rowSum2(nrow, 0.0);
+
+    // compressed-column iteration
+    for (int col = 0; col < ncol; ++col) {
+      for (int idx = p[col]; idx < p[col + 1]; ++idx) {
+        int row = i[idx];
+        double v = x[idx];
+        rowSum[row]  += v;
+        rowSum2[row] += v * v;
+      }
+    }
+
+    NumericVector out(nrow);
+    for (int row = 0; row < nrow; ++row) {
+      double mean = rowSum[row] / ncol;
+      out[row] = rowSum2[row] / ncol - mean * mean;
+    }
+
+    Rcout << "[rowVariance_cpp] Sparse computation complete\n";
+    return out;
   }
-  
-  return variances;
+
+  // Unsupported type
+  stop("`mat` must be a numeric matrix or a dgCMatrix.");
+  return NumericVector(0); // never reached
 }
