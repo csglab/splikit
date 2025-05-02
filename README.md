@@ -1,12 +1,8 @@
 # Splikit
 
-*A toolkit for analyzing RNA splicing in single-cell RNA-seq (scRNA-seq) data.*
-
-<p align="right">
-
-<img src="./docs/logo.png" alt="Splikit logo" width="250"/>
-
-</p>
+|                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |                                                      |
+|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------:|
+| **Splikit** /ˈsplaɪ.kɪt/ is a toolkit designed for the analysis of high-dimensional single-cell splicing data. It provides a framework to extract and work with ratio-based data structures derived from single-cell RNA sequencing experiments. The package avoids the need for bulky S4 objects by offering direct and efficient manipulation of matrices. Core functionalities are implemented in C++ via Rcpp to ensure high performance and scalability on large datasets. | ![Splikit logo](./docs/logo.png){alt="Splikit logo"} |
 
 [![Documentation](https://img.shields.io/badge/Docs-Learn%20More-blue.svg)](./docs/README.md)
 
