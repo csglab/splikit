@@ -1,0 +1,185 @@
+#' Calculate the Sum Deviance for Inclusion and Exclusion Matrices
+#'
+#' @param m1_matrix A matrix representing the inclusion matrix. Rows are events, columns are barcodes.
+#' @param m2_matrix A matrix representing the exclusion matrix. Rows are events, columns are barcodes.
+#' @param min_row_sum A numeric value specifying the minimum row sum threshold for filtering events. Defaults to 50.
+#' @param verbose Logical. If \code{TRUE} (default), prints progress and informational messages.
+#' @param ... Additional arguments to be passed.
+#'
+#' @return A \code{data.table} containing the events and their corresponding sum deviance values.
+#' @export
+find_variable_events <- function(m1_matrix, m2_matrix, min_row_sum = 50, verbose=TRUE, ...) {
+
+  # Load necessary libraries
+  if (!requireNamespace("data.table", quietly = TRUE)) {
+    stop("The 'data.table' package is required but not installed.")
+  }
+
+  if (!requireNamespace("Rcpp", quietly = TRUE)) {
+    stop("The 'Rcpp' package is required but not installed.")
+  }
+
+  if (!requireNamespace("Matrix", quietly = TRUE)) {
+    stop("The 'Matrix' package is required but not installed.")
+  }
+
+  # Check if matrices are sparse
+  if (!(inherits(m1_matrix, "Matrix") && inherits(m2_matrix, "Matrix"))) {
+    stop("Both 'm1_matrix' and 'm2_matrix' must be sparse matrices of class 'Matrix'.")
+  }
+
+  # Check matrix compatibility
+  if (!identical(colnames(m1_matrix), colnames(m2_matrix))) {
+    stop("The colnames (barcodes) of inclusion and exclusion matrices are not identical.")
+  }
+
+  if (!identical(rownames(m1_matrix), rownames(m2_matrix))) {
+    stop("The rownames (junction events) of inclusion and exclusion matrices are not identical.")
+  }
+
+  # Filter rows based on minimum row sum criteria
+  to_keep_events <- which(rowSums(m1_matrix) > min_row_sum & rowSums(m2_matrix) > min_row_sum)
+  m1_matrix <- m1_matrix[to_keep_events, , drop = FALSE]
+  m2_matrix <- m2_matrix[to_keep_events, , drop = FALSE]
+
+  # Create metadata table
+  temp_current_barcodes <- data.table::data.table(brc = colnames(m1_matrix))
+  temp_current_barcodes$ID <- sub("^.{16}-(.*$)", "\\1", temp_current_barcodes$brc)
+  meta <- temp_current_barcodes
+
+  libraries <- unique(meta$ID)
+  cat("There are", length(libraries), "libraries detected...\n")
+
+  # Initialize deviance sum vector
+  sum_deviances <- numeric(nrow(m1_matrix))
+  names(sum_deviances) <- rownames(m1_matrix)
+
+  for (lib in libraries) {
+    filter <- which(meta[, ID] == lib)
+    M1_sub <- m1_matrix[, filter, drop = FALSE]
+    M2_sub <- m2_matrix[, filter, drop = FALSE]
+
+    # Calculate deviances using the C++ function
+    deviance_values <- tryCatch({
+      calcDeviances_ratio(M1_sub, M2_sub)
+    }, error = function(e) {
+      stop("Error in calcDeviances_ratio function: ", e$message)
+    })
+
+    deviance_values <- c(deviance_values)
+    names(deviance_values) <- rownames(M1_sub)
+    sum_deviances <- sum_deviances + deviance_values
+    if(verbose){cat("Calculating the deviances for sample", lib, "has been completed!\n")}
+  }
+
+  rez <- data.table::data.table(events = names(sum_deviances), sum_deviance = as.numeric(sum_deviances))
+  return(rez)
+  cat("All Done!\n")
+}
+
+#' Find Variable Genes Using Variance or Deviance-Based Metrics
+#'
+#' @description
+#' Identifies highly variable genes from a sparse gene expression matrix using one of two methods:
+#' variance-stabilizing transformation (VST) or deviance-based modeling. The VST method uses a C++-accelerated
+#' approach to compute standardized variance, while the deviance-based method models gene variability
+#' across libraries using negative binomial deviances.
+#'
+#' @param gene_expression_matrix A sparse gene expression matrix (of class \code{Matrix}) with gene names as row names.
+#' @param method Character string, either \code{"vst"} or \code{"sum_deviance"}. The default is \code{"sum_deviance"}.
+#'   \code{"vst"} uses a variance-stabilizing transformation to identify variable genes.
+#'   \code{"sum_deviance"} computes per-library deviances and combines them with a row variance metric.
+#' @param ... Additional arguments (currently unused).
+#'
+#' @return A \code{data.table} containing gene names (column \code{events}) and computed metrics.
+#'   For the deviance method, this includes \code{sum_deviance} and \code{variance} columns.
+#'
+#' @export
+find_variable_genes <- function(gene_expression_matrix, method = c("vst", "sum_deviance"), ...) {
+
+  # Check required libraries
+  if (!requireNamespace("data.table", quietly = TRUE)) {
+    stop("The 'data.table' package is required but not installed.")
+  }
+  if (!requireNamespace("Rcpp", quietly = TRUE)) {
+    stop("The 'Rcpp' package is required but not installed.")
+  }
+  if (!requireNamespace("Matrix", quietly = TRUE)) {
+    stop("The 'Matrix' package is required but not installed.")
+  }
+
+  # Verify that gene_expression_matrix is a sparse Matrix
+  if (!inherits(gene_expression_matrix, "Matrix")) {
+    stop("The 'gene_expression_matrix' must be a sparse matrix of class 'Matrix'.")
+  }
+
+  if (method == "vst") {
+    cat("The method we are using is vst (Seurat)...\n")
+    if (!exists("standardizeSparse_variance_vst")) {
+      stop("The function 'standardizeSparse_variance_vst' is not available. Check your C++ source files.")
+    }
+    rez_vector <- tryCatch({
+      standardizeSparse_variance_vst(matSEXP = gene_expression_matrix)
+    }, error = function(e) {
+      stop("Error in standardizeSparse_variance_vst: ", e$message)
+    })
+    rez <- data.table::data.table(events = rownames(gene_expression_matrix),
+                                  standardize_variance = rez_vector)
+  } else {
+    cat("The method we are using is like deviance summarion per library...\n")
+
+    # Filter rows based on minimum row sum criteria
+    to_keep_features <- which(rowSums(gene_expression_matrix) > 0)
+    if (length(to_keep_features) == 0) {
+      stop("No genes with a positive row sum were found.")
+    }
+    gene_expression_matrix <- gene_expression_matrix[to_keep_features, , drop = FALSE]
+
+    # Create metadata table using column names
+    temp_current_barcodes <- data.table::data.table(brc = colnames(gene_expression_matrix))
+    temp_current_barcodes$ID <- sub("^.{16}-(.*$)", "\\1", temp_current_barcodes$brc)
+    meta <- temp_current_barcodes
+
+    libraries <- unique(meta$ID)
+    cat("There are", length(libraries), "libraries detected...\n")
+
+    # Initialize deviance sum vector with gene names
+    sum_deviances <- numeric(nrow(gene_expression_matrix))
+    names(sum_deviances) <- rownames(gene_expression_matrix)
+
+    # Loop over each library to compute deviances
+    for (lib in libraries) {
+      filter <- which(meta[, ID] == lib)
+      gene_expression_matrix_sub <- gene_expression_matrix[, filter, drop = FALSE]
+
+      # Calculate deviances using the C++ function
+      deviance_values <- tryCatch({
+        calcNBDeviancesWithThetaEstimation(gene_expression_matrix_sub)
+      }, error = function(e) {
+        stop("Error in calcNBDeviancesWithThetaEstimation function: ", e$message)
+      })
+
+      deviance_values <- c(deviance_values)
+      names(deviance_values) <- rownames(gene_expression_matrix_sub)
+      sum_deviances <- sum_deviances + deviance_values
+      cat("Calculating the deviances for sample", lib, "has been completed!\n")
+    }
+
+    # Compute row variance using the previously defined function
+    row_var <- tryCatch({
+      multigedi_get_row_variance(sparse_matrix = gene_expression_matrix)
+    }, error = function(e) {
+      stop("Error in multigedi_get_row_variance: ", e$message)
+    })
+
+    row_var_cpp_dt <- data.table::data.table(events = rownames(gene_expression_matrix),
+                                             variance = row_var)
+
+    rez <- data.table::data.table(events = names(sum_deviances),
+                                  sum_deviance = as.numeric(sum_deviances))
+    rez <- base::merge(rez, row_var_cpp_dt, by = "events")
+    data.table::setkey(x = rez, NULL)
+  }
+
+  return(rez)
+}

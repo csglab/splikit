@@ -1,125 +1,127 @@
-#include <RcppEigen.h>
-#include <cmath>
-#include <algorithm>
-#include <vector>
+// Implements the variance-stabilizing transformation (VST) step of Hafemeister & Satija (2019)
+// without requiring Seurat. Operates on sparse dgCMatrix input using Rcpp + S4.
+//
+// Hafemeister, C. & Satija, R. (2019).
+// "Normalization and variance stabilization of single-cell RNA-seq data using
+// regularized negative binomial regression." Cell, 176(4), 1375–1389.e4.
+// DOI: https://doi.org/10.1016/j.cell.2019.05.031
+//
+// This file provides a lean Rcpp implementation that:
+//  - Extracts slots (i, p, x, Dim) from a dgCMatrix S4 object
+//  - Computes per-row means and variances (including zero entries)
+//  - Fits a loess curve to log10(var) ~ log10(mean)
+//  - Returns standardized variances (squared z-scores) per row
+//  - Logs progress via Rcpp::Rcout
+//
+// Only 32-bit indexing is supported, consistent with R's native dgCMatrix.
 
-// [[Rcpp::depends(RcppEigen)]]
+#include <Rcpp.h>
+using namespace Rcpp;
+
 // [[Rcpp::export]]
-Rcpp::NumericVector standardizeSparse_variance_loess(const Eigen::SparseMatrix<double>& X,
-                                                       bool display_progress = false) {
-  // Convert the input matrix to row-major order for efficient row iteration.
-  typedef Eigen::SparseMatrix<double, Eigen::RowMajor> SpMat;
-  SpMat X_row = X;
-  
-  int nrows = X_row.rows();  // number of features (rows)
-  int ncols = X_row.cols();  // number of observations (columns)
-  double vmax = std::sqrt(ncols);  // clipping threshold
-  
-  // Vectors to store each row's mean and variance (computed including zeros)
-  Rcpp::NumericVector rowMeans(nrows);
-  Rcpp::NumericVector rowVars(nrows);
-  
-  // Calculate mean and variance for each row.
-  for (int i = 0; i < nrows; i++){
-    double sum = 0.0;
-    int countNonZero = 0;
-    for (SpMat::InnerIterator it(X_row, i); it; ++it) {
-      sum += it.value();
-      countNonZero++;
-    }
-    int total = ncols;  // total entries (nonzeros + implicit zeros)
-    int nZero = total - countNonZero;
-    double mean = sum / total;
-    rowMeans[i] = mean;
-    
-    double sqDiffSum = 0.0;
-    for (SpMat::InnerIterator it(X_row, i); it; ++it) {
-      double diff = it.value() - mean;
-      sqDiffSum += diff * diff;
-    }
-    // Zeros contribute as (0 - mean)^2
-    sqDiffSum += nZero * (mean * mean);
-    
-    double var = (total > 1) ? sqDiffSum / (total - 1) : 0.0;
-    rowVars[i] = var;
-  }
-  
-  // Prepare vectors to hold the expected variance and standard deviation.
-  // We'll compute these by fitting a loess model to log10(variance) ~ log10(mean)
-  // for rows where variance > 0 and mean > 0.
-  Rcpp::NumericVector expectedVar(nrows, 0.0);
-  Rcpp::NumericVector sd(nrows, 1.0); // default sd
-  
-  // Identify indices for non-constant rows (variance > 0 and mean > 0 for log transform)
-  std::vector<int> nonConstIndices;
-  for (int i = 0; i < nrows; i++) {
-    if (rowVars[i] > 0 && rowMeans[i] > 0) {
-      nonConstIndices.push_back(i);
+NumericVector standardizeSparse_variance_vst(SEXP matSEXP,
+                                               bool display_progress = false) {
+  Rcout << "[SSVL] entering\n";
+
+  // 1) validate & extract
+  if (!Rf_isS4(matSEXP) || !Rf_inherits(matSEXP, "dgCMatrix"))
+    stop("`mat` must be a dgCMatrix");
+  S4 M(matSEXP);
+  IntegerVector dim = M.slot("Dim");
+  IntegerVector i   = M.slot("i");
+  IntegerVector p   = M.slot("p");
+  NumericVector x   = M.slot("x");
+  int nrow = dim[0], ncol = dim[1];
+  if (display_progress) Rcout << "[SSVL] matrix is " << nrow << "×" << ncol << "\n";
+
+  // 2) first pass: sums, sums2, nnzCount per row
+  std::vector<double> sum(nrow, 0.0), sum2(nrow, 0.0);
+  std::vector<int>    nnz(nrow, 0);
+  for (int col = 0; col < ncol; ++col) {
+    for (int idx = p[col]; idx < p[col+1]; ++idx) {
+      int r = i[idx];
+      double v = x[idx];
+      sum[r]  += v;
+      sum2[r] += v * v;
+      nnz[r]  += 1;
     }
   }
-  
-  if(nonConstIndices.size() > 0) {
-    int nNonConst = nonConstIndices.size();
-    Rcpp::NumericVector loessMean(nNonConst);
-    Rcpp::NumericVector loessVar(nNonConst);
-    
-    for (int j = 0; j < nNonConst; j++){
-      int idx = nonConstIndices[j];
-      loessMean[j] = rowMeans[idx];
-      loessVar[j] = rowVars[idx];
-    }
-    
-    // Create a data frame with columns "mean" and "variance" for the loess fit.
-    Rcpp::DataFrame df = Rcpp::DataFrame::create(Rcpp::_["mean"] = loessMean,
-                                                   Rcpp::_["variance"] = loessVar);
-    
-    // Optionally display progress.
-    if (display_progress) {
-      Rcpp::Rcerr << "Fitting loess to compute expected variance" << std::endl;
-    }
-    
-    // Call R's loess function: fit <- loess(log10(variance) ~ log10(mean), data = df, span = 0.3)
-    Rcpp::Function loess("loess");
-    Rcpp::List fit = loess(Rcpp::Named("formula") = Rcpp::CharacterVector::create("log10(variance) ~ log10(mean)"),
-                           Rcpp::Named("data") = df,
-                           Rcpp::Named("span") = 0.3);
-    
-    // Get the fitted values from the loess model using R's predict function.
-    Rcpp::Function predict("predict");
-    Rcpp::NumericVector fitted = predict(fit, Rcpp::Named("newdata") = df);
-    
-    // For each non-constant row, set expected variance as 10^(fitted value)
-    // and compute the standard deviation as sqrt(expected variance).
-    for (int j = 0; j < nNonConst; j++){
-      int idx = nonConstIndices[j];
-      expectedVar[idx] = std::pow(10.0, fitted[j]);
-      sd[idx] = std::sqrt(expectedVar[idx]);
-      if(sd[idx] == 0) sd[idx] = 1.0; // safeguard
-    }
+
+  // 3) compute raw means and variances (including zeros)
+  NumericVector rowMean(nrow), rowVar(nrow);
+  for (int r = 0; r < nrow; ++r) {
+    double  mu = sum[r] / ncol;
+    // zeros contribute 0 to sum2
+    double mean_of_squares = sum2[r] / ncol;
+    rowMean[r] =  mu;
+    rowVar [r] = mean_of_squares -  mu* mu;
   }
-  
-  // Now, for each row, standardize the values using the computed mean and the loess-derived SD,
-  // clip the standardized values at vmax, and compute the variance of these standardized values.
-  Rcpp::NumericVector result(nrows);
-  for (int i = 0; i < nrows; i++){
-    double mean = rowMeans[i];
-    double curr_sd = sd[i];
-    int total = ncols;
-    
-    double sumSquares = 0.0;
-    int countNonZero = 0;
-    for (SpMat::InnerIterator it(X_row, i); it; ++it) {
-      double standardized_val = (it.value() - mean) / curr_sd;
-      double clipped_val = std::min(vmax, standardized_val);
-      sumSquares += clipped_val * clipped_val;
-      countNonZero++;
+  if (display_progress) Rcout << "[SSVL] computed raw means & vars\n";
+
+  // 4) fit loess on log10(var) ~ log10(mean) for those with var>0
+  std::vector<int> good;
+  good.reserve(nrow);
+  for (int r = 0; r < nrow; ++r)
+    if (rowVar[r] > 0 && rowMean[r] > 0)
+      good.push_back(r);
+    NumericVector expectedVar(nrow, 0.0), sd(nrow, 1.0);
+
+    if (!good.empty()) {
+      int k = good.size();
+      NumericVector lm(k), lv(k);
+      for (int j = 0; j < k; ++j) {
+        lm[j] = rowMean[ good[j] ];
+        lv[j] = rowVar [ good[j] ];
+      }
+      DataFrame df = DataFrame::create(
+        Named("mean")     = lm,
+        Named("variance") = lv
+      );
+      if (display_progress) Rcout << "[SSVL] fitting loess on " << k << " points\n";
+
+      Function loess("loess"), predict("predict");
+      List fit = loess(_["formula"] = "log10(variance) ~ log10(mean)",
+                       _["data"]    = df,
+                       _["span"]    = 0.3);
+      NumericVector fitted = predict(fit, _["newdata"] = df);
+
+      for (int j = 0; j < k; ++j) {
+        int r = good[j];
+        double ev = std::pow(10.0, fitted[j]);
+        expectedVar[r] = ev;
+        sd[r] = (ev > 0 ? std::sqrt(ev) : 1.0);
+      }
     }
-    int nZero = total - countNonZero;
-    double zero_std = (0 - mean) / curr_sd;
-    sumSquares += nZero * (zero_std * zero_std);
-    
-    result[i] = (total > 1) ? sumSquares / (total - 1) : 0.0;
-  }
-  
-  return result;
+    if (display_progress) Rcout << "[SSVL] computed expectedVar & sd\n";
+
+    // 5) final pass: standardize each row (one loop over non-zeros + O(1) for zeros)
+    NumericVector result(nrow, 0.0);
+    double vmax = std::sqrt((double)ncol);
+    for (int col = 0; col < ncol; ++col) {
+      for (int idx = p[col]; idx < p[col+1]; ++idx) {
+        int r = i[idx];
+        double z = (x[idx] - rowMean[r]) / sd[r];
+        // clamp
+        if      (z >  vmax) z =  vmax;
+        else if (z < -vmax) z = -vmax;
+        result[r] += z * z;
+      }
+    }
+    // add zero contributions
+    for (int r = 0; r < nrow; ++r) {
+      int nz = nnz[r];
+      int zr = ncol - nz;
+      double z0 = (0.0 - rowMean[r]) / sd[r];
+      // clamp z0 as well
+      if      (z0 >  vmax) z0 =  vmax;
+      else if (z0 < -vmax) z0 = -vmax;
+      result[r] += zr * (z0 * z0);
+
+      // normalize by (ncol - 1) or ncol, depending on your definition
+      result[r] = (ncol > 1) ? ( result[r] / (ncol - 1) ) : 0.0;
+    }
+
+    Rcout << "[SSVL] exiting\n";
+    return result;
 }
+
