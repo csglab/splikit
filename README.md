@@ -1,4 +1,4 @@
-<img src="/man/figures/logo.png" align="right" height="150"/>
+<img src="/man/figures/logo.png" align="right" height="280"/>
 
 **Splikit** /ˈsplaɪ.kɪt/ is a toolkit designed for analyzing high-dimensional single-cell splicing data. It provides a framework for extracting and working with ratio-based data structures derived from single-cell RNA sequencing experiments. The package avoids the need for bulky S4 objects by offering direct and efficient manipulation of matrices. Core functionalities are implemented in C++ via Rcpp to ensure high performance and scalability on large datasets.
 
