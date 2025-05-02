@@ -47,3 +47,7 @@ po/*~
 rsconnect/
 .ipynb_checkpoints
 .Rproj.user
+
+# build artifacts
+*.o
+*.so
