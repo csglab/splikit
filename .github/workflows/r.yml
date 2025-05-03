@@ -10,12 +10,12 @@ jobs:
   R-CMD-check:
     runs-on: ubuntu-latest
 
+    name: Check on ${{ matrix.config.os }} (R ${{ matrix.config.r }})
+
     strategy:
       matrix:
         config:
           - { os: ubuntu-latest, r: 'release' }
-
-    name: ${{ matrix.config.os }} (R ${{ matrix.config.r }})
 
     steps:
       - uses: actions/checkout@v4
@@ -30,15 +30,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev
 
-      - name: Install R package dependencies
+      - name: Install dependencies
         uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: |
-            any::rcpp
-            any::rcpparmadillo
-            any::data.table
-            any::Matrix
-            any::testthat
+            rcmdcheck
+            testthat
+            devtools
           needs: true
 
       - name: Check package
