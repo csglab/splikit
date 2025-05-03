@@ -1,3 +1,8 @@
 ^splikit\.Rproj$
 ^\.Rproj\.user$
 ^LICENSE\.md$
+^configure\.ac$
+^configure$
+^autom4te\.cache$
+^src/Makevars.in.mac$
+^src/Makevars.in.linux$

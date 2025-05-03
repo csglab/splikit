@@ -12,6 +12,16 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// check_openmp_enabled
+bool check_openmp_enabled();
+RcppExport SEXP _splikit_check_openmp_enabled() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(check_openmp_enabled());
+    return rcpp_result_gen;
+END_RCPP
+}
 // silhouette_avg
 double silhouette_avg(const arma::mat& X, const IntegerVector& cluster_assignments, int n_threads);
 RcppExport SEXP _splikit_silhouette_avg(SEXP XSEXP, SEXP cluster_assignmentsSEXP, SEXP n_threadsSEXP) {
@@ -86,6 +96,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_splikit_check_openmp_enabled", (DL_FUNC) &_splikit_check_openmp_enabled, 0},
     {"_splikit_silhouette_avg", (DL_FUNC) &_splikit_silhouette_avg, 3},
     {"_splikit_calcDeviances_ratio", (DL_FUNC) &_splikit_calcDeviances_ratio, 2},
     {"_splikit_cppBetabinPseudoR2", (DL_FUNC) &_splikit_cppBetabinPseudoR2, 3},

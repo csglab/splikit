@@ -6,6 +6,15 @@ using namespace Rcpp;
 
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::plugins(openmp)]]
+
+// [[Rcpp::export]]
+bool check_openmp_enabled() {
+#ifdef _OPENMP
+    return true;
+#else
+    return false;
+#endif
+}
 // [[Rcpp::export]]
 double silhouette_avg(const arma::mat& X, const IntegerVector& cluster_assignments, int n_threads = 1) {
   int n = X.n_rows;

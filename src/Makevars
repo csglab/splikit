@@ -1,4 +1,1 @@
-## src/Makevars (Linux/macOS)
-CXX_STD = CXX14
-PKG_CXXFLAGS += -O3 -march=native -pipe -fopenmp
-PKG_LIBS     += -fopenmp $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
+

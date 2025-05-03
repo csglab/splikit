@@ -1,0 +1,9 @@
+#!/bin/bash
+
+if [ "$(uname)" = "Darwin" ]; then
+    cp -f src/Makevars.mac src/Makevars
+else
+    cp -f src/Makevars.linux src/Makevars
+fi
+
+exit 0
