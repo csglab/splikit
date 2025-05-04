@@ -9,6 +9,7 @@ find_variable_events(
   m2_matrix,
   min_row_sum = 50,
   verbose = TRUE,
+  n_threads = 1,
   ...
 )
 }
@@ -20,6 +21,8 @@ find_variable_events(
 \item{min_row_sum}{A numeric value specifying the minimum row sum threshold for filtering events. Defaults to 50.}
 
 \item{verbose}{Logical. If \code{TRUE} (default), prints progress and informational messages.}
+
+\item{n_threads}{If the module OpenPM is available for your device, the function suggests using multi-thread processing for even faster computation.}
 
 \item{...}{Additional arguments to be passed.}
 }
