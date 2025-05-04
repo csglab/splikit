@@ -5,7 +5,27 @@
 [![R-CMD-check](https://github.com/Arshammik/splikit/actions/workflows/R-CMD-check.yml/badge.svg)](https://github.com/Arshammik/splikit/actions/workflows/R-CMD-check.yml)
 [![Documentation](https://img.shields.io/badge/Docs-Learn%20More-blue.svg)](./docs/README.md)
 
-### **Requirments**
+## **Requirments**
 
 -   [R version 3.5.0](http://www.r-project.org/) or later.
 -   R libraries: [Rcpp](https://cran.r-project.org/web/packages/Rcpp/index.html), [RcppArmadillo](https://cran.r-project.org/web/packages/RcppArmadillo/index.html), [Matrix](https://cran.r-project.org/web/packages/Matrix/index.html), [data.table](https://cran.r-project.org/web/packages/data.table/index.html)
+
+
+## **Installation**
+To install the latest version of splikit from GitHub:
+```r
+# Install devtools if you haven't already
+install.packages("devtools")
+
+# Install splikit
+devtools::install_github("Arshammik/splikit")
+```
+## **Documentation**
+Comprehensive documentation is available at:
+1. [Installation](./docs/README.md)
+2. [STARsolo proccessings](./docs/README.md)
+3. [Feature selection tools](./docs/README.md)
+4. [General tools](./docs/README.md)
+
+## **Issues**
+If you encounter any issues or have suggestions, please [open an issue](https://github.com/Arshammik/splikit/issues/new).
