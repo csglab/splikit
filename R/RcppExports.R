@@ -9,8 +9,8 @@ silhouette_avg <- function(X, cluster_assignments, n_threads = 1L) {
     .Call(`_splikit_silhouette_avg`, X, cluster_assignments, n_threads)
 }
 
-calcDeviances_ratio <- function(M1, M2) {
-    .Call(`_splikit_calcDeviances_ratio`, M1, M2)
+calcDeviances_ratio <- function(M1, M2, num_threads = 1L) {
+    .Call(`_splikit_calcDeviances_ratio`, M1, M2, num_threads)
 }
 
 cppBetabinPseudoR2 <- function(Z, m1, m2) {

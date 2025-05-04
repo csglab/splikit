@@ -36,14 +36,15 @@ BEGIN_RCPP
 END_RCPP
 }
 // calcDeviances_ratio
-arma::vec calcDeviances_ratio(const arma::sp_mat& M1, const arma::sp_mat& M2);
-RcppExport SEXP _splikit_calcDeviances_ratio(SEXP M1SEXP, SEXP M2SEXP) {
+arma::vec calcDeviances_ratio(const arma::sp_mat& M1, const arma::sp_mat& M2, int num_threads);
+RcppExport SEXP _splikit_calcDeviances_ratio(SEXP M1SEXP, SEXP M2SEXP, SEXP num_threadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::sp_mat& >::type M1(M1SEXP);
     Rcpp::traits::input_parameter< const arma::sp_mat& >::type M2(M2SEXP);
-    rcpp_result_gen = Rcpp::wrap(calcDeviances_ratio(M1, M2));
+    Rcpp::traits::input_parameter< int >::type num_threads(num_threadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(calcDeviances_ratio(M1, M2, num_threads));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -98,7 +99,7 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_splikit_check_openmp_enabled", (DL_FUNC) &_splikit_check_openmp_enabled, 0},
     {"_splikit_silhouette_avg", (DL_FUNC) &_splikit_silhouette_avg, 3},
-    {"_splikit_calcDeviances_ratio", (DL_FUNC) &_splikit_calcDeviances_ratio, 2},
+    {"_splikit_calcDeviances_ratio", (DL_FUNC) &_splikit_calcDeviances_ratio, 3},
     {"_splikit_cppBetabinPseudoR2", (DL_FUNC) &_splikit_cppBetabinPseudoR2, 3},
     {"_splikit_calcNBDeviancesWithThetaEstimation", (DL_FUNC) &_splikit_calcNBDeviancesWithThetaEstimation, 1},
     {"_splikit_standardizeSparse_variance_vst", (DL_FUNC) &_splikit_standardizeSparse_variance_vst, 2},
