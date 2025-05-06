@@ -2,9 +2,9 @@ name: R-CMD-check
 
 on:
   push:
-    branches: [pkg]
+    branches: [main]
   pull_request:
-    branches: [pkg]
+    branches: [main]
 
 jobs:
   R-CMD-check:
