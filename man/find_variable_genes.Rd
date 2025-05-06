@@ -29,3 +29,15 @@ variance-stabilizing transformation (VST) or deviance-based modeling. The VST me
 approach to compute standardized variance, while the deviance-based method models gene variability
 across libraries using negative binomial deviances.
 }
+\examples{
+# loading the toy dataset
+toy_obj <- load_toy_M1_M2_object()
+
+# getting high variable genes
+HVG_VST <- find_variable_genes(toy_obj$gene_expression, method = "vst") # vst method
+HVG_DEV <- find_variable_genes(toy_obj$gene_expression, method = "sum_deviance") # sum_deviance method
+# printing the results
+print(HVG_VST[order(-standardize_variance)])
+print(HVG_DEV[order(-sum_deviance)])
+
+}

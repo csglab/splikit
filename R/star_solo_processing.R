@@ -842,3 +842,13 @@ make_velo_count <- function(velocyto_dirs, sample_ids, whitelist_barcodes = NULL
   }
 }
 
+#' Load the toy M1/M2 object
+#'
+#' Loads a toy object of M1 and M2 used for examples or testing.
+#'
+#' @return An R object from the toy_m1_m2_obj.rds file.
+#' @export
+load_toy_M1_M2_object <- function() {
+  file <- system.file("extdata", "toy_m1_m2_obj.rds", package = "splikit")
+  readRDS(file)
+}

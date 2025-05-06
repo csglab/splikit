@@ -8,6 +8,16 @@
 #' @param ... Additional arguments to be passed.
 #'
 #' @return A \code{data.table} containing the events and their corresponding sum deviance values.
+#'
+#' @examples
+#' # loading the toy dataset
+#' toy_obj <- load_toy_M1_M2_object()
+#'
+#' # getting HVE (high variable events)
+#'  HVE <- find_variable_events(toy_obj$m1, toy_obj$m2)
+#'
+#'  # printing the results
+#'  print(HVE[order(-sum_deviance)])
 #' @export
 find_variable_events <- function(m1_matrix, m2_matrix, min_row_sum = 50, verbose=TRUE, n_threads=1, ...) {
 
@@ -95,6 +105,18 @@ find_variable_events <- function(m1_matrix, m2_matrix, min_row_sum = 50, verbose
 #' @return A \code{data.table} containing gene names (column \code{events}) and computed metrics.
 #'   For the deviance method, this includes \code{sum_deviance} and \code{variance} columns.
 #'
+#' @examples
+#' # loading the toy dataset
+#' toy_obj <- load_toy_M1_M2_object()
+#'
+#' # getting high variable genes
+#' HVG_VST <- find_variable_genes(toy_obj$gene_expression, method = "vst") # vst method
+#' HVG_DEV <- find_variable_genes(toy_obj$gene_expression, method = "sum_deviance") # sum_deviance method
+
+#' # printing the results
+#' print(HVG_VST[order(-standardize_variance)])
+#' print(HVG_DEV[order(-sum_deviance)])
+#'
 #' @export
 find_variable_genes <- function(gene_expression_matrix, method = c("vst", "sum_deviance"), ...) {
 
@@ -168,9 +190,9 @@ find_variable_genes <- function(gene_expression_matrix, method = c("vst", "sum_d
 
     # Compute row variance using the previously defined function
     row_var <- tryCatch({
-      multigedi_get_row_variance(sparse_matrix = gene_expression_matrix)
+      splikit::get_rowVar(M = gene_expression_matrix)
     }, error = function(e) {
-      stop("Error in multigedi_get_row_variance: ", e$message)
+      stop("Error in splikit::get_rowVar: ", e$message)
     })
 
     row_var_cpp_dt <- data.table::data.table(events = rownames(gene_expression_matrix),
