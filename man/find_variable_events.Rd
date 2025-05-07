@@ -32,3 +32,13 @@ A \code{data.table} containing the events and their corresponding sum deviance v
 \description{
 Calculate the Sum Deviance for Inclusion and Exclusion Matrices
 }
+\examples{
+# loading the toy dataset
+toy_obj <- load_toy_M1_M2_object()
+
+# getting HVE (high variable events)
+ HVE <- find_variable_events(toy_obj$m1, toy_obj$m2)
+
+ # printing the results
+ print(HVE[order(-sum_deviance)])
+}
