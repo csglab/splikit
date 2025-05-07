@@ -106,30 +106,26 @@ find_variable_events <- function(m1_matrix, m2_matrix, min_row_sum = 50, verbose
 #'   For the deviance method, this includes \code{sum_deviance} and \code{variance} columns.
 #'
 #' @examples
+#' library(Matrix)
 #' # loading the toy dataset
 #' toy_obj <- load_toy_M1_M2_object()
 #'
 #' # getting high variable genes
 #' HVG_VST <- find_variable_genes(toy_obj$gene_expression, method = "vst") # vst method
 #' HVG_DEV <- find_variable_genes(toy_obj$gene_expression, method = "sum_deviance") # sum_deviance method
-
+#'
 #' # printing the results
 #' print(HVG_VST[order(-standardize_variance)])
 #' print(HVG_DEV[order(-sum_deviance)])
 #'
+#' @useDynLib splikit, .registration = TRUE
+#' @import Rcpp
+#' @import Matrix
+#' @importClassesFrom Matrix dgCMatrix dsCMatrix dgTMatrix dsTMatrix
 #' @export
-find_variable_genes <- function(gene_expression_matrix, method = c("vst", "sum_deviance"), ...) {
-
-  # Check required libraries
-  if (!requireNamespace("data.table", quietly = TRUE)) {
-    stop("The 'data.table' package is required but not installed.")
-  }
-  if (!requireNamespace("Rcpp", quietly = TRUE)) {
-    stop("The 'Rcpp' package is required but not installed.")
-  }
-  if (!requireNamespace("Matrix", quietly = TRUE)) {
-    stop("The 'Matrix' package is required but not installed.")
-  }
+find_variable_genes <- function(gene_expression_matrix, method = "vst", ...) {
+  # addinng the vst method as the deafult
+  method <- match.arg(method, choices = c("vst", "sum_deviance"))
 
   # Verify that gene_expression_matrix is a sparse Matrix
   if (!inherits(gene_expression_matrix, "Matrix")) {
@@ -177,7 +173,8 @@ find_variable_genes <- function(gene_expression_matrix, method = c("vst", "sum_d
 
       # Calculate deviances using the C++ function
       deviance_values <- tryCatch({
-        calcNBDeviancesWithThetaEstimation(gene_expression_matrix_sub)
+        calcNBDeviancesWithThetaEstimation(as(gene_expression_matrix_sub, "dgCMatrix"))
+
       }, error = function(e) {
         stop("Error in calcNBDeviancesWithThetaEstimation function: ", e$message)
       })
