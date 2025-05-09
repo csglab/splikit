@@ -2,9 +2,9 @@
 #'
 #' @param m1_matrix A matrix representing the inclusion matrix. Rows are events, columns are barcodes.
 #' @param m2_matrix A matrix representing the exclusion matrix. Rows are events, columns are barcodes.
+#' @param n_threads If the module OpenPM is available for your device, the function suggests using multi-thread processing for even faster computation.
 #' @param min_row_sum A numeric value specifying the minimum row sum threshold for filtering events. Defaults to 50.
 #' @param verbose Logical. If \code{TRUE} (default), prints progress and informational messages.
-#' @param n_threads If the module OpenPM is available for your device, the function suggests using multi-thread processing for even faster computation.
 #' @param ... Additional arguments to be passed.
 #'
 #' @return A \code{data.table} containing the events and their corresponding sum deviance values.
@@ -19,31 +19,16 @@
 #'  # printing the results
 #'  print(HVE[order(-sum_deviance)])
 #' @export
-find_variable_events <- function(m1_matrix, m2_matrix, min_row_sum = 50, verbose=TRUE, n_threads=1, ...) {
-
-  # Load necessary libraries
-  if (!requireNamespace("data.table", quietly = TRUE)) {
-    stop("The 'data.table' package is required but not installed.")
-  }
-
-  if (!requireNamespace("Rcpp", quietly = TRUE)) {
-    stop("The 'Rcpp' package is required but not installed.")
-  }
-
-  if (!requireNamespace("Matrix", quietly = TRUE)) {
-    stop("The 'Matrix' package is required but not installed.")
-  }
+find_variable_events <- function(m1_matrix, m2_matrix, min_row_sum = 50, n_threads=1, verbose=TRUE, ...) {
 
   # Check if matrices are sparse
   if (!(inherits(m1_matrix, "Matrix") && inherits(m2_matrix, "Matrix"))) {
     stop("Both 'm1_matrix' and 'm2_matrix' must be sparse matrices of class 'Matrix'.")
   }
-
   # Check matrix compatibility
   if (!identical(colnames(m1_matrix), colnames(m2_matrix))) {
     stop("The colnames (barcodes) of inclusion and exclusion matrices are not identical.")
   }
-
   if (!identical(rownames(m1_matrix), rownames(m2_matrix))) {
     stop("The rownames (junction events) of inclusion and exclusion matrices are not identical.")
   }
@@ -65,24 +50,26 @@ find_variable_events <- function(m1_matrix, m2_matrix, min_row_sum = 50, verbose
   sum_deviances <- numeric(nrow(m1_matrix))
   names(sum_deviances) <- rownames(m1_matrix)
 
-  for (lib in libraries) {
+  deviance_results <- lapply(libraries, function(lib) {
     filter <- which(meta[, ID] == lib)
     M1_sub <- m1_matrix[, filter, drop = FALSE]
     M2_sub <- m2_matrix[, filter, drop = FALSE]
 
-    # Calculate deviances using the C++ function
     deviance_values <- tryCatch({
       calcDeviances_ratio(M1_sub, M2_sub, n_threads)
     }, error = function(e) {
       stop("Error in calcDeviances_ratio function: ", e$message)
     })
-
     deviance_values <- c(deviance_values)
     names(deviance_values) <- rownames(M1_sub)
-    sum_deviances <- sum_deviances + deviance_values
-    if(verbose){cat("Calculating the deviances for sample", lib, "has been completed!\n")}
-  }
+    if(verbose) {
+      cat("Calculating the deviances for sample", lib, "has been completed!\n")
+    }
+    return(deviance_values)
+  })
 
+  # Combine all results
+  sum_deviances <- Reduce(`+`, deviance_results)
   rez <- data.table::data.table(events = names(sum_deviances), sum_deviance = as.numeric(sum_deviances))
   return(rez)
   cat("All Done!\n")
@@ -166,24 +153,37 @@ find_variable_genes <- function(gene_expression_matrix, method = "vst", ...) {
     sum_deviances <- numeric(nrow(gene_expression_matrix))
     names(sum_deviances) <- rownames(gene_expression_matrix)
 
-    # Loop over each library to compute deviances
-    for (lib in libraries) {
-      filter <- which(meta[, ID] == lib)
-      gene_expression_matrix_sub <- gene_expression_matrix[, filter, drop = FALSE]
+    calculate_all_deviances <- function(gene_expression_matrix, meta, ID) {
+      # Get unique libraries
+      libraries <- unique(meta[, ID])
 
-      # Calculate deviances using the C++ function
-      deviance_values <- tryCatch({
-        calcNBDeviancesWithThetaEstimation(as(gene_expression_matrix_sub, "dgCMatrix"))
+      # Initialize results list
+      deviances_list <- vector("list", length(libraries))
+      names(deviances_list) <- libraries
 
-      }, error = function(e) {
-        stop("Error in calcNBDeviancesWithThetaEstimation function: ", e$message)
+      # Getting the sim devinaces fir NB model
+      deviances_list <- lapply(libraries, function(lib) {
+        filter <- which(meta[, ID] == lib)
+        gene_expression_matrix_sub <- gene_expression_matrix[, filter, drop = FALSE]
+        deviance_values <- tryCatch({
+          calcNBDeviancesWithThetaEstimation(as(gene_expression_matrix_sub, "dgCMatrix"))
+        }, error = function(e) {
+          stop("Error in calcNBDeviancesWithThetaEstimation function: ", e$message)
+        })
+        deviance_values <- c(deviance_values)
+        names(deviance_values) <- rownames(gene_expression_matrix_sub)
+        cat("Calculating the deviances for sample", lib, "has been completed!\n")
+        return(deviance_values)
       })
 
-      deviance_values <- c(deviance_values)
-      names(deviance_values) <- rownames(gene_expression_matrix_sub)
-      sum_deviances <- sum_deviances + deviance_values
-      cat("Calculating the deviances for sample", lib, "has been completed!\n")
+      # Sum deviances across all libraries
+      sum_deviances <- Reduce(`+`, deviances_list)
+
+      return(sum_deviances)
     }
+
+    # Then use it:
+    sum_deviances <- calculate_all_deviances(gene_expression_matrix, meta, ID)
 
     # Compute row variance using the previously defined function
     row_var <- tryCatch({

@@ -1,6 +1,6 @@
 Package: splikit
 Title: A toolkit for analysing RNA splicing in scRNA-seq data
-Version: 1.0.3
+Version: 1.0.4
 Authors@R: 
     person("Arsham", "Mikaeili Namini", , "arsham.mikaeilinamini@mail.mcgill.ca", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-9453-6951"))
@@ -14,18 +14,14 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
-Imports: 
-  Matrix,
-  data.table,
-  methods,
-  stats,
-  Rcpp,
-  RcppArmadillo,
-  RcppEigen
-LinkingTo: 
-    Rcpp, 
-    RcppArmadillo,
-    RcppEigen
-Suggests: 
-    testthat (>= 3.0.0)
+Imports: Matrix, data.table, methods, stats, Rcpp, RcppArmadillo,
+        RcppEigen
+LinkingTo: Rcpp, RcppArmadillo, RcppEigen
+Suggests: testthat (>= 3.0.0)
 Config/testthat/edition: 3
+NeedsCompilation: yes
+Packaged: 2025-05-09 22:41:00 UTC; arsham79
+Author: Arsham Mikaeili Namini [aut, cre]
+    (<https://orcid.org/0000-0002-9453-6951>)
+Maintainer: Arsham Mikaeili Namini <arsham.mikaeilinamini@mail.mcgill.ca>
+Depends: R (>= 3.5.0)
