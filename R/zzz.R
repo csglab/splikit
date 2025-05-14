@@ -12,3 +12,12 @@
     "=======================================================================================================\n"
   )
 }
+
+
+.onLoad <- function(libname, pkgname) {
+  required_pkgs <- c("Rcpp", "RcppEigen", "RcppArmadillo", "Matrix", "data.table")
+  missing_pkgs  <- required_pkgs[!vapply(required_pkgs, requireNamespace, quietly = TRUE, FUN.VALUE = logical(1))]
+  if (length(missing_pkgs)) {
+    install.packages(missing_pkgs, dependencies = TRUE)
+  }
+}
