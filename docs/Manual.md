@@ -29,8 +29,20 @@ Splikit transforms raw splicing junction data into meaningful biological insight
 - **Variable Event Detection**: Identifies highly variable splicing events using advanced statistical methods
 - **Gene Expression Integration**: Processes standard gene expression data alongside splicing information
 - **Statistical Analysis**: Provides tools for correlation analysis, variance computation, and clustering evaluation
+### How splikit get these data?
+We grouped splice junctions according to the coordinates of their intronic regions into “local junction variants” (LJVs). An LJV is defined as a set of junctions that share either the first or the last coordinate.
 
-### Why Use Splikit?
+For each junction within an LJV, we extracted the junction abundance count for every cell, which we refer to as the **M1 count**. The **M2 count** for a given junction in each cell is defined as the sum of the counts of its alternative junctions—that is, all other junctions within the same LJV. In other words, for each junction and cell, the number of reads supporting that junction is contrasted with the total number of reads supporting its alternative junctions. For example, if $( M1_{ij} )$ represents the count for junction $j$ in cell $i$, then the M2 count can be written as:
+
+``` math
+M2_{ij} = \sum_{\substack{k \in J \\ k \neq j}} M1_{ik}
+```
+
+where $J$ denotes the set of all junctions in the LJV. The grouping method is determined by whether the first or the last coordinate is used, with an appended `-E` or `-S` added to the event IDs accordingly. This approach may result in a single junction receiving two different measurements in the M2 counts (in the exclusion matrix) while having identical measurements in the M1 matrix (inclusion matrix).
+
+We also address sample-specific junctions. If a junction is present in only a subset of samples, a vector of zeros is assigned to the M1 matrix for the samples where the junction is absent. The M2 measurements are then computed accordingly. This figure illustrates two exemplary LJVs.
+
+<img src="/man/figures/Markdown_figure.jpg" align="center" height="680"/>
 
 Traditional single-cell RNA-seq analysis focuses primarily on gene expression levels, but alternative splicing represents an additional layer of cellular complexity. Splikit enables researchers to:
 
