@@ -6,3 +6,8 @@
 ^autom4te\.cache$
 ^src/Makevars.in.mac$
 ^src/Makevars.in.linux$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^\.github$
+^build_pkgdown_site\.R$

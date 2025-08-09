@@ -104,18 +104,23 @@ List fit_logistic_regression(const vec& x, const vec& m1, const vec& m2) {
                       Named("nobs") = nobs);
 }
 
-// Main exported function that takes dense matrices for Z, m1, and m2.
-// Each row i of Z is the predictor vector for model i, and the corresponding row
-// from m1 and m2 contains the counts (successes and failures, respectively).
-//
-// This version uses a for loop to manually extract each row of the dense matrices.
-// [[Rcpp::export]]
-NumericVector cppBetabinPseudoR2(const arma::mat& Z,
-                                 const arma::mat& m1,
-                                 const arma::mat& m2) {
+// Template function to handle both dense and sparse matrices
+template<typename T1, typename T2>
+NumericVector cppBetabinPseudoR2_impl(const arma::mat& Z,
+                                      const T1& m1,
+                                      const T2& m2,
+                                      const std::string& metric) {
   int nrows = Z.n_rows;
   int p = Z.n_cols; // number of columns / observations per row
   NumericVector result(nrows, NA_REAL); // to store pseudo R² for each row
+  
+  // Validate metric parameter
+  bool use_nagelkerke = (metric == "nagelkerke" || metric == "Nagelkerke");
+  bool use_coxsnell = (metric == "coxsnell" || metric == "CoxSnell" || metric == "cox-snell" || metric == "Cox-Snell");
+  
+  if (!use_nagelkerke && !use_coxsnell) {
+    Rcpp::stop("Invalid metric. Must be 'CoxSnell' or 'Nagelkerke'");
+  }
   
   for (int i = 0; i < nrows; i++) {
     // Extract predictor vector for row i.
@@ -189,16 +194,60 @@ NumericVector cppBetabinPseudoR2(const arma::mat& Z,
     
     // Compute Cox-Snell R².
     double CoxSnell_R2 = 1.0 - std::exp((dev_full - dev_reduced) / double(n_obs));
-    double denom = 1.0 - std::exp(-dev_reduced / double(n_obs));
-    double Nagelkerke_R2 = (denom != 0.0) ? CoxSnell_R2 / denom : NA_REAL;
     
-    // Return the signed square-root of CoxSnell_R2, using the sign of the predictor coefficient.
-    double slope = beta_full(1);
-    double CoxSnell_r = (CoxSnell_R2 >= 0.0) ? std::sqrt(CoxSnell_R2) * ((slope >= 0) ? 1.0 : -1.0) : NA_REAL;
-    
-    result[i] = CoxSnell_r;
+    // Return the appropriate metric
+    if (use_nagelkerke) {
+      // Compute Nagelkerke R²
+      double denom = 1.0 - std::exp(-dev_reduced / double(n_obs));
+      double Nagelkerke_R2 = (denom != 0.0) ? CoxSnell_R2 / denom : NA_REAL;
+      
+      // Return the signed square-root of Nagelkerke_R2, using the sign of the predictor coefficient.
+      double slope = beta_full(1);
+      double Nagelkerke_r = (Nagelkerke_R2 >= 0.0) ? std::sqrt(Nagelkerke_R2) * ((slope >= 0) ? 1.0 : -1.0) : NA_REAL;
+      result[i] = Nagelkerke_r;
+    } else {
+      // Return the signed square-root of CoxSnell_R2 (default), using the sign of the predictor coefficient.
+      double slope = beta_full(1);
+      double CoxSnell_r = (CoxSnell_R2 >= 0.0) ? std::sqrt(CoxSnell_R2) * ((slope >= 0) ? 1.0 : -1.0) : NA_REAL;
+      result[i] = CoxSnell_r;
+    }
   }
   
   return result;
 }
 
+// Main exported function for dense matrices (backward compatibility)
+// [[Rcpp::export]]
+NumericVector cppBetabinPseudoR2(const arma::mat& Z,
+                                 const arma::mat& m1,
+                                 const arma::mat& m2,
+                                 std::string metric = "CoxSnell") {
+  return cppBetabinPseudoR2_impl(Z, m1, m2, metric);
+}
+
+// Exported function for sparse m1 and m2 matrices
+// [[Rcpp::export]]
+NumericVector cppBetabinPseudoR2_sparse(const arma::mat& Z,
+                                        const arma::sp_mat& m1,
+                                        const arma::sp_mat& m2,
+                                        std::string metric = "CoxSnell") {
+  return cppBetabinPseudoR2_impl(Z, m1, m2, metric);
+}
+
+// Exported function for mixed types: sparse m1, dense m2
+// [[Rcpp::export]]
+NumericVector cppBetabinPseudoR2_mixed1(const arma::mat& Z,
+                                        const arma::sp_mat& m1,
+                                        const arma::mat& m2,
+                                        std::string metric = "CoxSnell") {
+  return cppBetabinPseudoR2_impl(Z, m1, m2, metric);
+}
+
+// Exported function for mixed types: dense m1, sparse m2
+// [[Rcpp::export]]
+NumericVector cppBetabinPseudoR2_mixed2(const arma::mat& Z,
+                                        const arma::mat& m1,
+                                        const arma::sp_mat& m2,
+                                        std::string metric = "CoxSnell") {
+  return cppBetabinPseudoR2_impl(Z, m1, m2, metric);
+}

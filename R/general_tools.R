@@ -6,19 +6,20 @@ NULL
 #'
 #' This function calculates a pseudo R²-like correlation metric using a beta-binomial model
 #' implemented in C++. It takes in a data matrix `ZDB_matrix` and two model matrices
-#' for inclusion and exclusion, respectively. Optionally, it can suppress warnings
-#' generated during computation.
+#' for inclusion and exclusion, respectively. The function now supports both sparse and dense
+#' matrices for m1 and m2, and allows selection between Cox-Snell and Nagelkerke R² metrics.
 #'
 #' @param ZDB_matrix A numeric dense matrix of shape (events x samples). Should have rownames representing events.
-#' @param m1_inclusion A numeric dense matrix of the same number of rows as `ZDB_matrix`, representing inclusion features.
-#' @param m2_exclusion A numeric dense matrix of the same number of rows as `ZDB_matrix`, representing exclusion features.
+#' @param m1_inclusion A numeric matrix (dense or sparse) of the same number of rows as `ZDB_matrix`, representing inclusion features.
+#' @param m2_exclusion A numeric matrix (dense or sparse) of the same number of rows as `ZDB_matrix`, representing exclusion features.
+#' @param metric Character string specifying which R² metric to compute. Options are "CoxSnell" (default) or "Nagelkerke".
 #' @param suppress_warnings Logical. If \code{TRUE} (default), suppresses warnings during any warnings triggered during
 #' computation (e.g., due to ill-conditioned inputs)
 #'
 #' @return A `data.table` with the following columns:
 #' \describe{
 #'   \item{event}{The event names from `ZDB_matrix` rownames.}
-#'   \item{pseudo_correlation}{The computed pseudo R² correlation values.}
+#'   \item{pseudo_correlation}{The computed pseudo R² correlation values using the specified metric.}
 #'   \item{null_distribution}{Null correlation values from a permuted version of `ZDB_matrix`.}
 #' }
 #'
@@ -39,20 +40,37 @@ NULL
 #' ncol = ncol(m1_inclusion))
 #' rownames(ZDB_matrix) <- rownames(m1_inclusion)
 #'
-#' # both m1 and m2 need to be a dense matrix
-#' m1_inclusion <- as.matrix(m1_inclusion)
-#' m2_exclusion <- as.matrix(m2_exclusion)
+#' # m1 and m2 can now be either sparse or dense matrices
+#' # Example with dense matrices (backward compatible)
+#' m1_dense <- as.matrix(m1_inclusion)
+#' m2_dense <- as.matrix(m2_exclusion)
+#' pseudo_r_square_cox <- get_pseudo_correlation(ZDB_matrix, m1_dense, m2_dense)
+#' print(pseudo_r_square_cox)
 #'
-#' # getting the pseudo-correlation
-#' pseudo_r_squre <- get_pseudo_correlation(ZDB_matrix, m1_inclusion, m2_exclusion)
-#' print(pseudo_r_squre)
+#' # Example with sparse matrices (more memory efficient)
+#' pseudo_r_square_sparse <- get_pseudo_correlation(ZDB_matrix, m1_inclusion, m2_exclusion)
+#' 
+#' # Example using Nagelkerke R² instead of Cox-Snell
+#' pseudo_r_square_nagel <- get_pseudo_correlation(ZDB_matrix, m1_inclusion, m2_exclusion, 
+#'                                                 metric = "Nagelkerke")
+#' print(pseudo_r_square_nagel)
 #'
 #' @export
-get_pseudo_correlation <- function(ZDB_matrix, m1_inclusion, m2_exclusion, suppress_warnings=TRUE) {
+get_pseudo_correlation <- function(ZDB_matrix, m1_inclusion, m2_exclusion, metric = "CoxSnell", suppress_warnings=TRUE) {
 
-  if (!is.matrix(ZDB_matrix)) stop("ZDB_matrix must be a matrix.")
-  if (!is.matrix(m1_inclusion)) stop("m1_inclusion must be a matrix.")
-  if (!is.matrix(m2_exclusion)) stop("m2_exclusion must be a matrix.")
+  # Validate metric parameter
+  metric <- match.arg(metric, choices = c("CoxSnell", "Nagelkerke"))
+  
+  # Check ZDB_matrix (must be dense)
+  if (!is.matrix(ZDB_matrix)) stop("ZDB_matrix must be a dense matrix.")
+  
+  # Check m1 and m2 (can be sparse or dense)
+  if (!is.matrix(m1_inclusion) && !inherits(m1_inclusion, "Matrix")) {
+    stop("m1_inclusion must be either a dense matrix or a sparse Matrix.")
+  }
+  if (!is.matrix(m2_exclusion) && !inherits(m2_exclusion, "Matrix")) {
+    stop("m2_exclusion must be either a dense matrix or a sparse Matrix.")
+  }
 
   if (nrow(m1_inclusion) != nrow(ZDB_matrix)) {
     stop("m1_inclusion must have the same number of rows as ZDB_matrix.")
@@ -63,10 +81,36 @@ get_pseudo_correlation <- function(ZDB_matrix, m1_inclusion, m2_exclusion, suppr
 
   cat("Input dimension check passed. Proceeding with computation.\n")
   if(suppress_warnings){suppressWarnings({
-
-      correls <- cppBetabinPseudoR2(Z = ZDB_matrix,
-                                    m1 = as.matrix(m1_inclusion),
-                                    m2 = as.matrix(m2_exclusion))
+      
+      # Determine which C++ function to call based on matrix types
+      is_m1_sparse <- inherits(m1_inclusion, "Matrix")
+      is_m2_sparse <- inherits(m2_exclusion, "Matrix")
+      
+      if (!is_m1_sparse && !is_m2_sparse) {
+        # Both dense - ensure they are matrices
+        correls <- cppBetabinPseudoR2(Z = ZDB_matrix,
+                                      m1 = as.matrix(m1_inclusion),
+                                      m2 = as.matrix(m2_exclusion),
+                                      metric = metric)
+      } else if (is_m1_sparse && is_m2_sparse) {
+        # Both sparse
+        correls <- cppBetabinPseudoR2_sparse(Z = ZDB_matrix,
+                                             m1 = m1_inclusion,
+                                             m2 = m2_exclusion,
+                                             metric = metric)
+      } else if (is_m1_sparse && !is_m2_sparse) {
+        # m1 sparse, m2 dense
+        correls <- cppBetabinPseudoR2_mixed1(Z = ZDB_matrix,
+                                             m1 = m1_inclusion,
+                                             m2 = as.matrix(m2_exclusion),
+                                             metric = metric)
+      } else {
+        # m1 dense, m2 sparse
+        correls <- cppBetabinPseudoR2_mixed2(Z = ZDB_matrix,
+                                             m1 = as.matrix(m1_inclusion),
+                                             m2 = m2_exclusion,
+                                             metric = metric)
+      }
 
       if (is.null(rownames(ZDB_matrix))) {
         warning("ZDB_matrix has no row names; assigning default event names.")
@@ -75,9 +119,28 @@ get_pseudo_correlation <- function(ZDB_matrix, m1_inclusion, m2_exclusion, suppr
         events <- rownames(ZDB_matrix)
       }
 
-      null_dist <- cppBetabinPseudoR2(Z = ZDB_matrix[, sample.int(ncol(ZDB_matrix))],
-                                      m1 = as.matrix(m1_inclusion),
-                                      m2 = as.matrix(m2_exclusion))
+      # Calculate null distribution with the same metric and matrix types
+      if (!is_m1_sparse && !is_m2_sparse) {
+        null_dist <- cppBetabinPseudoR2(Z = ZDB_matrix[, sample.int(ncol(ZDB_matrix))],
+                                        m1 = as.matrix(m1_inclusion),
+                                        m2 = as.matrix(m2_exclusion),
+                                        metric = metric)
+      } else if (is_m1_sparse && is_m2_sparse) {
+        null_dist <- cppBetabinPseudoR2_sparse(Z = ZDB_matrix[, sample.int(ncol(ZDB_matrix))],
+                                               m1 = m1_inclusion,
+                                               m2 = m2_exclusion,
+                                               metric = metric)
+      } else if (is_m1_sparse && !is_m2_sparse) {
+        null_dist <- cppBetabinPseudoR2_mixed1(Z = ZDB_matrix[, sample.int(ncol(ZDB_matrix))],
+                                               m1 = m1_inclusion,
+                                               m2 = as.matrix(m2_exclusion),
+                                               metric = metric)
+      } else {
+        null_dist <- cppBetabinPseudoR2_mixed2(Z = ZDB_matrix[, sample.int(ncol(ZDB_matrix))],
+                                               m1 = as.matrix(m1_inclusion),
+                                               m2 = m2_exclusion,
+                                               metric = metric)
+      }
 
       results <- data.table::data.table(
         event = events,

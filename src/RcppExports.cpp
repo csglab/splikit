@@ -49,26 +49,70 @@ BEGIN_RCPP
 END_RCPP
 }
 // cppBetabinPseudoR2
-NumericVector cppBetabinPseudoR2(const arma::mat& Z, const arma::mat& m1, const arma::mat& m2);
-RcppExport SEXP _splikit_cppBetabinPseudoR2(SEXP ZSEXP, SEXP m1SEXP, SEXP m2SEXP) {
+NumericVector cppBetabinPseudoR2(const arma::mat& Z, const arma::mat& m1, const arma::mat& m2, std::string metric);
+RcppExport SEXP _splikit_cppBetabinPseudoR2(SEXP ZSEXP, SEXP m1SEXP, SEXP m2SEXP, SEXP metricSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::mat& >::type Z(ZSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type m1(m1SEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type m2(m2SEXP);
-    rcpp_result_gen = Rcpp::wrap(cppBetabinPseudoR2(Z, m1, m2));
+    Rcpp::traits::input_parameter< std::string >::type metric(metricSEXP);
+    rcpp_result_gen = Rcpp::wrap(cppBetabinPseudoR2(Z, m1, m2, metric));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cppBetabinPseudoR2_sparse
+NumericVector cppBetabinPseudoR2_sparse(const arma::mat& Z, const arma::sp_mat& m1, const arma::sp_mat& m2, std::string metric);
+RcppExport SEXP _splikit_cppBetabinPseudoR2_sparse(SEXP ZSEXP, SEXP m1SEXP, SEXP m2SEXP, SEXP metricSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type Z(ZSEXP);
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type m1(m1SEXP);
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type m2(m2SEXP);
+    Rcpp::traits::input_parameter< std::string >::type metric(metricSEXP);
+    rcpp_result_gen = Rcpp::wrap(cppBetabinPseudoR2_sparse(Z, m1, m2, metric));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cppBetabinPseudoR2_mixed1
+NumericVector cppBetabinPseudoR2_mixed1(const arma::mat& Z, const arma::sp_mat& m1, const arma::mat& m2, std::string metric);
+RcppExport SEXP _splikit_cppBetabinPseudoR2_mixed1(SEXP ZSEXP, SEXP m1SEXP, SEXP m2SEXP, SEXP metricSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type Z(ZSEXP);
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type m1(m1SEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type m2(m2SEXP);
+    Rcpp::traits::input_parameter< std::string >::type metric(metricSEXP);
+    rcpp_result_gen = Rcpp::wrap(cppBetabinPseudoR2_mixed1(Z, m1, m2, metric));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cppBetabinPseudoR2_mixed2
+NumericVector cppBetabinPseudoR2_mixed2(const arma::mat& Z, const arma::mat& m1, const arma::sp_mat& m2, std::string metric);
+RcppExport SEXP _splikit_cppBetabinPseudoR2_mixed2(SEXP ZSEXP, SEXP m1SEXP, SEXP m2SEXP, SEXP metricSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type Z(ZSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type m1(m1SEXP);
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type m2(m2SEXP);
+    Rcpp::traits::input_parameter< std::string >::type metric(metricSEXP);
+    rcpp_result_gen = Rcpp::wrap(cppBetabinPseudoR2_mixed2(Z, m1, m2, metric));
     return rcpp_result_gen;
 END_RCPP
 }
 // calcNBDeviancesWithThetaEstimation
-arma::vec calcNBDeviancesWithThetaEstimation(const arma::sp_mat& gene_expression);
-RcppExport SEXP _splikit_calcNBDeviancesWithThetaEstimation(SEXP gene_expressionSEXP) {
+arma::vec calcNBDeviancesWithThetaEstimation(const arma::sp_mat& gene_expression, int num_threads);
+RcppExport SEXP _splikit_calcNBDeviancesWithThetaEstimation(SEXP gene_expressionSEXP, SEXP num_threadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::sp_mat& >::type gene_expression(gene_expressionSEXP);
-    rcpp_result_gen = Rcpp::wrap(calcNBDeviancesWithThetaEstimation(gene_expression));
+    Rcpp::traits::input_parameter< int >::type num_threads(num_threadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(calcNBDeviancesWithThetaEstimation(gene_expression, num_threads));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -100,8 +144,11 @@ static const R_CallMethodDef CallEntries[] = {
     {"_splikit_check_openmp_enabled", (DL_FUNC) &_splikit_check_openmp_enabled, 0},
     {"_splikit_silhouette_avg", (DL_FUNC) &_splikit_silhouette_avg, 3},
     {"_splikit_calcDeviances_ratio", (DL_FUNC) &_splikit_calcDeviances_ratio, 3},
-    {"_splikit_cppBetabinPseudoR2", (DL_FUNC) &_splikit_cppBetabinPseudoR2, 3},
-    {"_splikit_calcNBDeviancesWithThetaEstimation", (DL_FUNC) &_splikit_calcNBDeviancesWithThetaEstimation, 1},
+    {"_splikit_cppBetabinPseudoR2", (DL_FUNC) &_splikit_cppBetabinPseudoR2, 4},
+    {"_splikit_cppBetabinPseudoR2_sparse", (DL_FUNC) &_splikit_cppBetabinPseudoR2_sparse, 4},
+    {"_splikit_cppBetabinPseudoR2_mixed1", (DL_FUNC) &_splikit_cppBetabinPseudoR2_mixed1, 4},
+    {"_splikit_cppBetabinPseudoR2_mixed2", (DL_FUNC) &_splikit_cppBetabinPseudoR2_mixed2, 4},
+    {"_splikit_calcNBDeviancesWithThetaEstimation", (DL_FUNC) &_splikit_calcNBDeviancesWithThetaEstimation, 2},
     {"_splikit_standardizeSparse_variance_vst", (DL_FUNC) &_splikit_standardizeSparse_variance_vst, 2},
     {"_splikit_rowVariance_cpp", (DL_FUNC) &_splikit_rowVariance_cpp, 1},
     {NULL, NULL, 0}
