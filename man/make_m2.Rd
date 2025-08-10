@@ -2,20 +2,44 @@
 % Please edit documentation in R/star_solo_processing.R
 \name{make_m2}
 \alias{make_m2}
-\title{make_m2}
+\title{make_m2 (Integrated with Automatic Batching)}
 \usage{
-make_m2(m1_inclusion_matrix, eventdata)
+make_m2(
+  m1_inclusion_matrix,
+  eventdata,
+  batch_size = 5000,
+  memory_threshold = 2e+09,
+  force_fast = FALSE,
+  multi_thread = FALSE,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{m1_inclusion_matrix}{A sparse matrix to be modified and used for creating the M2 matrix.}
 
 \item{eventdata}{A data.table containing event information with at least \code{group_id} and an index column.}
+
+\item{batch_size}{An integer specifying the number of groups to process per batch (default: 5000).
+Only used when batched processing is triggered.}
+
+\item{memory_threshold}{A numeric value representing the maximum number of rows allowed in the
+summary before switching to batched processing (default: 2e9, which is ~93\% of 2^31).}
+
+\item{force_fast}{A logical flag to force fast processing regardless of size estimates (default: FALSE).
+WARNING: This may cause memory errors on large datasets.}
+
+\item{multi_thread}{A logical flag to enable parallel processing for batched operations (default: FALSE).
+Only used when batched processing is triggered. Requires parallel package.}
+
+\item{verbose}{A logical flag for detailed progress reporting (default: FALSE).}
 }
 \value{
 A sparse matrix M2 with the dummy row removed and proper adjustments made.
 }
 \description{
-Creates the M2 matrix from a given m1_inclusion_matrix and eventdata, ensuring the proper processing of group indices and matrix operations.
+Creates the M2 matrix from a given m1_inclusion_matrix and eventdata with intelligent
+memory management. Automatically detects when the operation would exceed memory limits
+and switches to a batched sparse matrix approach.
 }
 \examples{
 junction_abundance_object <- load_toy_SJ_object()

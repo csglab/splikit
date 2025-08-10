@@ -4,7 +4,13 @@
 \alias{find_variable_genes}
 \title{Find Variable Genes Using Variance or Deviance-Based Metrics}
 \usage{
-find_variable_genes(gene_expression_matrix, method = "vst", ...)
+find_variable_genes(
+  gene_expression_matrix,
+  method = "vst",
+  n_threads = 1,
+  verbose = TRUE,
+  ...
+)
 }
 \arguments{
 \item{gene_expression_matrix}{A sparse gene expression matrix (of class \code{Matrix}) with gene names as row names.}
@@ -12,6 +18,10 @@ find_variable_genes(gene_expression_matrix, method = "vst", ...)
 \item{method}{Character string, either \code{"vst"} or \code{"sum_deviance"}. The default is \code{"sum_deviance"}.
 \code{"vst"} uses a variance-stabilizing transformation to identify variable genes.
 \code{"sum_deviance"} computes per-library deviances and combines them with a row variance metric.}
+
+\item{n_threads}{If OpenMP is available for your device, the function suggests using multi-thread processing for even faster computation (only for sum_deviance method).}
+
+\item{verbose}{Logical. If \code{TRUE} (default), prints progress and informational messages.}
 
 \item{...}{Additional arguments (currently unused).}
 }
@@ -33,6 +43,11 @@ toy_obj <- load_toy_M1_M2_object()
 # getting high variable genes
 HVG_VST <- find_variable_genes(toy_obj$gene_expression, method = "vst") # vst method
 HVG_DEV <- find_variable_genes(toy_obj$gene_expression, method = "sum_deviance") # sum_deviance method
+
+# Using multi-threading for faster computation (sum_deviance method only)
+HVG_DEV_MT <- find_variable_genes(toy_obj$gene_expression, 
+                                  method = "sum_deviance", 
+                                  n_threads = 4) # 4 threads
 
 # printing the results
 print(HVG_VST[order(-standardize_variance)])

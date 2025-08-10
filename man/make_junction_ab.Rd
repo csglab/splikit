@@ -8,7 +8,10 @@ make_junction_ab(
   STARsolo_SJ_dirs,
   white_barcode_lists = NULL,
   sample_ids,
-  use_internal_whitelist = TRUE
+  use_internal_whitelist = TRUE,
+  verbose = FALSE,
+  keep_multi_mapped_junctions = FALSE,
+  ...
 )
 }
 \arguments{
@@ -22,6 +25,13 @@ If \code{NULL} (default), the function uses the internal STARsolo whitelist if \
 
 \item{use_internal_whitelist}{A logical flag (default \code{TRUE}) indicating whether to use the internal STARsolo whitelist
 located at \code{../Gene/filtered/barcodes.tsv} for each sample when \code{white_barcode_lists} is \code{NULL}.}
+
+\item{verbose}{Logical (default \code{FALSE}). If \code{TRUE}, prints detailed progress messages during processing.}
+
+\item{keep_multi_mapped_junctions}{Logical (default \code{FALSE}). If \code{TRUE}, retains multi-mapped junctions (flag 0).
+If \code{FALSE}, only keeps uniquely mapped junctions (flag 1).}
+
+\item{...}{Additional parameters for future extensions.}
 }
 \value{
 A list containing processed splicing modality data for each sample. If a single sample is provided,

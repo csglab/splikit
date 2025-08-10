@@ -8,15 +8,18 @@ get_pseudo_correlation(
   ZDB_matrix,
   m1_inclusion,
   m2_exclusion,
+  metric = "CoxSnell",
   suppress_warnings = TRUE
 )
 }
 \arguments{
 \item{ZDB_matrix}{A numeric dense matrix of shape (events x samples). Should have rownames representing events.}
 
-\item{m1_inclusion}{A numeric dense matrix of the same number of rows as \code{ZDB_matrix}, representing inclusion features.}
+\item{m1_inclusion}{A numeric matrix (dense or sparse) of the same number of rows as \code{ZDB_matrix}, representing inclusion features.}
 
-\item{m2_exclusion}{A numeric dense matrix of the same number of rows as \code{ZDB_matrix}, representing exclusion features.}
+\item{m2_exclusion}{A numeric matrix (dense or sparse) of the same number of rows as \code{ZDB_matrix}, representing exclusion features.}
+
+\item{metric}{Character string specifying which R² metric to compute. Options are "CoxSnell" (default) or "Nagelkerke".}
 
 \item{suppress_warnings}{Logical. If \code{TRUE} (default), suppresses warnings during any warnings triggered during
 computation (e.g., due to ill-conditioned inputs)}
@@ -25,15 +28,15 @@ computation (e.g., due to ill-conditioned inputs)}
 A \code{data.table} with the following columns:
 \describe{
 \item{event}{The event names from \code{ZDB_matrix} rownames.}
-\item{pseudo_correlation}{The computed pseudo R² correlation values.}
+\item{pseudo_correlation}{The computed pseudo R² correlation values using the specified metric.}
 \item{null_distribution}{Null correlation values from a permuted version of \code{ZDB_matrix}.}
 }
 }
 \description{
 This function calculates a pseudo R²-like correlation metric using a beta-binomial model
 implemented in C++. It takes in a data matrix \code{ZDB_matrix} and two model matrices
-for inclusion and exclusion, respectively. Optionally, it can suppress warnings
-generated during computation.
+for inclusion and exclusion, respectively. The function now supports both sparse and dense
+matrices for m1 and m2, and allows selection between Cox-Snell and Nagelkerke R² metrics.
 }
 \examples{
 set.seed(42)
@@ -52,12 +55,19 @@ nrow = nrow(m1_inclusion),
 ncol = ncol(m1_inclusion))
 rownames(ZDB_matrix) <- rownames(m1_inclusion)
 
-# both m1 and m2 need to be a dense matrix
-m1_inclusion <- as.matrix(m1_inclusion)
-m2_exclusion <- as.matrix(m2_exclusion)
+# m1 and m2 can now be either sparse or dense matrices
+# Example with dense matrices (backward compatible)
+m1_dense <- as.matrix(m1_inclusion)
+m2_dense <- as.matrix(m2_exclusion)
+pseudo_r_square_cox <- get_pseudo_correlation(ZDB_matrix, m1_dense, m2_dense)
+print(pseudo_r_square_cox)
 
-# getting the pseudo-correlation
-pseudo_r_squre <- get_pseudo_correlation(ZDB_matrix, m1_inclusion, m2_exclusion)
-print(pseudo_r_squre)
+# Example with sparse matrices (more memory efficient)
+pseudo_r_square_sparse <- get_pseudo_correlation(ZDB_matrix, m1_inclusion, m2_exclusion)
+
+# Example using Nagelkerke R² instead of Cox-Snell
+pseudo_r_square_nagel <- get_pseudo_correlation(ZDB_matrix, m1_inclusion, m2_exclusion, 
+                                                metric = "Nagelkerke")
+print(pseudo_r_square_nagel)
 
 }

@@ -4,11 +4,16 @@
 \alias{make_m1}
 \title{make_m1}
 \usage{
-make_m1(junction_ab_object)
+make_m1(junction_ab_object, min_counts = 1, verbose = FALSE)
 }
 \arguments{
 \item{junction_ab_object}{A named list where each element represents a sample's junction abundance data.
 Each element must contain \code{eventdata} and a sparse matrix.}
+
+\item{min_counts}{Numeric (default 1). Minimum count threshold for filtering events.
+Events with total counts below this threshold will be removed.}
+
+\item{verbose}{Logical (default \code{FALSE}). If \code{TRUE}, prints detailed progress messages during processing.}
 }
 \value{
 A list containing the processed data from all samples:
