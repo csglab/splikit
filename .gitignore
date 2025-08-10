@@ -51,3 +51,4 @@ rsconnect/
 # build artifacts
 *.o
 *.so
+.DS_Store
