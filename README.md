@@ -3,7 +3,7 @@
 **Splikit** /ˈsplaɪ.kɪt/ is a toolkit designed for analyzing high-dimensional single-cell splicing data. It provides a framework for extracting and working with ratio-based data structures derived from single-cell RNA sequencing experiments. The package avoids the need for bulky S4 objects by offering direct and efficient manipulation of matrices. Core functionalities are implemented in C++ via Rcpp to ensure high performance and scalability on large datasets.
 
 [![R-CMD-check](https://github.com/Arshammik/splikit/actions/workflows/R-CMD-check.yml/badge.svg)](https://github.com/Arshammik/splikit/actions/workflows/R-CMD-check.yml)
-[![Documentation](https://img.shields.io/badge/Docs-Learn%20More-blue.svg)](./vignettes/splikit-manual.md)
+[![Documentation](https://img.shields.io/badge/Docs-Learn%20More-blue.svg)](./vignettes/splikit_manual.Rmd)
 
 ## **Requirments**
 
@@ -22,8 +22,8 @@ devtools::install_github("Arshammik/splikit")
 ```
 ## **Documentation**
 Comprehensive documentation is available at:
-1. [Full Manual](./vignettes/splikit-manual.md)
-2. [STARsolo Processing Guide](./vignettes/STARsolo-guide.md)
+1. [Full Manual](./vignettes/splikit_manual.Rmd)
+2. [STARsolo Processing Guide](./vignettes/STARsolo_guide.Rmd)
 3. [Package Website](https://arshammik.github.io/splikit/) (after GitHub Pages deployment)
 
 ## **Issues**

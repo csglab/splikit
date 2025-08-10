@@ -46,12 +46,5 @@ reference:
   - load_toy_M1_M2_object
   - make_eventdata_plus
 
-articles:
-- title: "Getting Started"
-  navbar: ~
-  contents:
-  - "splikit-manual"
-  - "STARsolo-guide"
-
 development:
   mode: auto
