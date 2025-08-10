@@ -10,6 +10,10 @@
 #' @param sample_ids A character vector or list of unique sample IDs corresponding to each directory in `STARsolo_SJ_dirs`.
 #' @param use_internal_whitelist A logical flag (default `TRUE`) indicating whether to use the internal STARsolo whitelist
 #'                                located at `../Gene/filtered/barcodes.tsv` for each sample when `white_barcode_lists` is `NULL`.
+#' @param verbose Logical (default `FALSE`). If `TRUE`, prints detailed progress messages during processing.
+#' @param keep_multi_mapped_junctions Logical (default `FALSE`). If `TRUE`, retains multi-mapped junctions (flag 0).
+#'                                     If `FALSE`, only keeps uniquely mapped junctions (flag 1).
+#' @param ... Additional parameters for future extensions.
 #' @return
 #' A list containing processed splicing modality data for each sample. If a single sample is provided,
 #' the function returns the processed data as a list. For multiple samples, a named list is returned.
@@ -23,12 +27,22 @@
 #' @importFrom Matrix readMM
 #' @importFrom data.table fread
 #' @export
-
-make_junction_ab <- function(STARsolo_SJ_dirs, white_barcode_lists = NULL, sample_ids, use_internal_whitelist = TRUE) {
+make_junction_ab <- function(STARsolo_SJ_dirs, white_barcode_lists = NULL, sample_ids, use_internal_whitelist = TRUE, verbose = FALSE, keep_multi_mapped_junctions = FALSE, ...) {
 
   # Handle single sample input by converting to lists
   if (!is.list(STARsolo_SJ_dirs)) STARsolo_SJ_dirs <- list(STARsolo_SJ_dirs)
   if (!is.list(sample_ids)) sample_ids <- list(sample_ids)
+
+  # Convert white_barcode_lists to list if it's not NULL and not already a list
+  if (!is.null(white_barcode_lists) && !is.list(white_barcode_lists)) {
+    white_barcode_lists <- list(white_barcode_lists)
+  }
+
+  # Automatically set use_internal_whitelist to FALSE if white_barcode_lists is provided
+  if (!is.null(white_barcode_lists)) {
+    use_internal_whitelist <- FALSE
+    if(verbose) cat("External whitelist provided: automatically disabling internal whitelist\n")
+  }
 
   # If white_barcode_lists is NULL, create a list of NULL values
   if (is.null(white_barcode_lists)) {
@@ -38,7 +52,10 @@ make_junction_ab <- function(STARsolo_SJ_dirs, white_barcode_lists = NULL, sampl
   # Ensure inputs have the same length
   if (!all(length(STARsolo_SJ_dirs) == length(white_barcode_lists),
            length(white_barcode_lists) == length(sample_ids))) {
-    stop("All input lists (STARsolo_SJ_dirs, white_barcode_lists, sample_ids) must have the same length.", call. = FALSE)
+    stop("All input lists (STARsolo_SJ_dirs, white_barcode_lists, sample_ids) must have the same length.\n",
+         "Lengths: STARsolo_SJ_dirs=", length(STARsolo_SJ_dirs),
+         ", white_barcode_lists=", length(white_barcode_lists),
+         ", sample_ids=", length(sample_ids), call. = FALSE)
   }
 
   # Helper function to process one sample
@@ -49,33 +66,79 @@ make_junction_ab <- function(STARsolo_SJ_dirs, white_barcode_lists = NULL, sampl
     barcodes_dir <- file.path(STARsolo_SJ_dir, "raw", "barcodes.tsv")
     internal_whitelist_dir <- file.path(STARsolo_SJ_dir, "..", "Gene", "filtered", "barcodes.tsv")
 
-    # Check for required files
-    if (!file.exists(mtx_dir)) {
-      stop("No abundance matrix in STARsolo SJ directory for sample: ", sample_id, call. = FALSE)
-    }
-    if (!file.exists(feature_dir)) {
-      stop("No feature matrix in STARsolo SJ directory for sample: ", sample_id, call. = FALSE)
-    }
-    if (!file.exists(barcodes_dir)) {
-      stop("No barcode file in STARsolo SJ directory for sample: ", sample_id, call. = FALSE)
+    # Debug: Print paths if verbose
+    if(verbose) {
+      cat("|-- Debug paths for sample:", sample_id, "\n")
+      cat("    Matrix file:", mtx_dir, "\n")
+      cat("    Feature file:", feature_dir, "\n")
+      cat("    Barcodes file:", barcodes_dir, "\n")
+      cat("    Internal whitelist:", internal_whitelist_dir, "\n")
     }
 
-    # Read splicing data
-    cat("├── Processing sample: ", sample_id, "\n")
-    mtx <- Matrix::readMM(mtx_dir)
-    raw_brc <- data.table::fread(barcodes_dir, header = FALSE, showProgress = FALSE)
-    feature <- data.table::fread(
-      feature_dir,
-      select = c(1, 2, 3, 4, 5, 6),
-      col.names = c('chr', 'start', 'end', 'strand', "intron_motif", 'is_annot'),
-      showProgress = FALSE
-    )
+    # Check for required files
+    if (!file.exists(mtx_dir)) {
+      stop("No abundance matrix in STARsolo SJ directory for sample: ", sample_id,
+           "\nLooked at: ", mtx_dir, call. = FALSE)
+    }
+    if (!file.exists(feature_dir)) {
+      stop("No feature matrix in STARsolo SJ directory for sample: ", sample_id,
+           "\nLooked at: ", feature_dir, call. = FALSE)
+    }
+    if (!file.exists(barcodes_dir)) {
+      stop("No barcode file in STARsolo SJ directory for sample: ", sample_id,
+           "\nLooked at: ", barcodes_dir, call. = FALSE)
+    }
+
+    # Read splicing data with error handling
+    if(verbose) cat("|-- Processing sample: ", sample_id, "\n")
+
+    tryCatch({
+      mtx <- Matrix::readMM(mtx_dir)
+      if(verbose) cat("    Matrix dimensions: ", nrow(mtx), "x", ncol(mtx), "\n")
+    }, error = function(e) {
+      stop("Error reading matrix file for sample ", sample_id, ": ", e$message, call. = FALSE)
+    })
+
+    tryCatch({
+      raw_brc <- data.table::fread(barcodes_dir, header = FALSE, showProgress = FALSE)
+      if(verbose) cat("    Barcodes read: ", nrow(raw_brc), "\n")
+    }, error = function(e) {
+      stop("Error reading barcodes file for sample ", sample_id, ": ", e$message, call. = FALSE)
+    })
+
+    tryCatch({
+      feature <- data.table::fread(
+        feature_dir,
+        select = c(1, 2, 3, 4, 5, 6, 7),
+        col.names = c('chr', 'start', 'end', 'strand', "intron_motif", 'is_annot', 'unique_mapped'),
+        showProgress = FALSE
+      )
+      if(verbose) cat("    Features read: ", nrow(feature), "\n")
+    }, error = function(e) {
+      stop("Error reading feature file for sample ", sample_id, ": ", e$message, call. = FALSE)
+    })
+
+    # Validate dimensions match
+    if(nrow(mtx) != nrow(feature)) {
+      stop("Dimension mismatch for sample ", sample_id, ": matrix has ", nrow(mtx),
+           " rows but feature file has ", nrow(feature), " rows", call. = FALSE)
+    }
+
+    if(ncol(mtx) != nrow(raw_brc)) {
+      stop("Dimension mismatch for sample ", sample_id, ": matrix has ", ncol(mtx),
+           " columns but barcodes file has ", nrow(raw_brc), " rows", call. = FALSE)
+    }
 
     # Use internal whitelist if enabled and no external whitelist is provided
     if (use_internal_whitelist && is.null(white_barcode_list)) {
       if (file.exists(internal_whitelist_dir)) {
-        white_barcode_list <- data.table::fread(internal_whitelist_dir, header = FALSE, showProgress = FALSE)$V1
-        cat("│  ├── Using STARsolo internal whitelist for sample: ", sample_id, "\n")
+        tryCatch({
+          white_barcode_list <- data.table::fread(internal_whitelist_dir, header = FALSE, showProgress = FALSE)$V1
+          if(verbose) cat("    |-- Using STARsolo internal whitelist for sample: ", sample_id,
+                          " (", length(white_barcode_list), " barcodes)\n")
+        }, error = function(e) {
+          stop("Error reading internal whitelist for sample ", sample_id, ": ", e$message, call. = FALSE)
+        })
       } else {
         stop("Internal whitelist not found at ", internal_whitelist_dir, " for sample: ", sample_id, call. = FALSE)
       }
@@ -91,6 +154,27 @@ make_junction_ab <- function(STARsolo_SJ_dirs, white_barcode_lists = NULL, sampl
     # Assign rownames and colnames to mtx
     colnames(mtx) <- raw_brc$V1
     rownames(mtx) <- feature$row_names_mtx
+
+    # Filter multi-mapped junctions if requested
+    if(!keep_multi_mapped_junctions) {
+      old_junction_numbers <- nrow(feature)
+
+      # Filter for unique mapped junctions only
+      feature <- feature[unique_mapped > 0, ]
+
+      # Subset matrix to match filtered features
+      if(nrow(feature) > 0) {
+        mtx <- mtx[feature$row_names_mtx, , drop = FALSE]
+      } else {
+        warning("No unique mapped junctions found for sample ", sample_id)
+        mtx <- mtx[integer(0), , drop = FALSE]  # Empty matrix with correct structure
+      }
+
+      eliminated_junctions <- old_junction_numbers - nrow(feature)
+      if(verbose && eliminated_junctions > 0) {
+        cat("    |-- Eliminated ", eliminated_junctions, " junctions due to only multi-mapped records\n")
+      }
+    }
 
     # Check if rownames of mtx match row_names_mtx
     if (!identical(rownames(mtx), feature$row_names_mtx)) {
@@ -111,10 +195,10 @@ make_junction_ab <- function(STARsolo_SJ_dirs, white_barcode_lists = NULL, sampl
         stop("All barcodes were removed after trimming for sample: ", sample_id, call. = FALSE)
       }
 
-      cat("│  ├── Trimmed junction abundance matrix for sample: ", sample_id,
-          " (", final_barcodes, " barcodes remaining)\n")
+      if(verbose) cat("|  |-- Trimmed junction abundance matrix for sample:", sample_id,
+                      "(", final_barcodes, " barcodes remaining)\n")
     } else {
-      cat("│  ├── No barcode filtration applied for sample: ", sample_id, "\n")
+      if(verbose) cat("|  |-- No barcode filtration applied for sample: ", sample_id, "\n")
     }
 
     # Append sample_id to column names
@@ -134,7 +218,7 @@ make_junction_ab <- function(STARsolo_SJ_dirs, white_barcode_lists = NULL, sampl
       stringsAsFactors = FALSE
     )
 
-    cat("│  └── Finished processing sample: ", sample_id, "\n")
+    if(verbose) cat("|  +-- Finished processing sample: ", sample_id, "\n")
     return(list(result = m1, summary = summary_row))
   }
 
@@ -180,6 +264,9 @@ load_toy_SJ_object <- function() {
 #'
 #' @param junction_ab_object A named list where each element represents a sample's junction abundance data.
 #'                           Each element must contain `eventdata` and a sparse matrix.
+#' @param min_counts Numeric (default 1). Minimum count threshold for filtering events. 
+#'                   Events with total counts below this threshold will be removed.
+#' @param verbose Logical (default `FALSE`). If `TRUE`, prints detailed progress messages during processing.
 #' @return
 #' A list containing the processed data from all samples:
 #'
@@ -199,84 +286,154 @@ load_toy_SJ_object <- function() {
 #' @importFrom data.table setDT copy setnames := data.table is.data.table .N .GRP
 #' @export
 
-make_m1 <- function(junction_ab_object) {
+make_m1 <- function(junction_ab_object, min_counts = 1, verbose = FALSE) {
   # Validate inputs
   if (!is.list(junction_ab_object) || length(junction_ab_object) == 0) {
-    stop("`junction_ab_object` must be a non-empty list.")
+    stop("`junction_ab_object` must be a non-empty list.", call. = FALSE)
   }
+
+  if (!is.numeric(min_counts) || length(min_counts) != 1 || min_counts < 0) {
+    stop("`min_counts` must be a single non-negative number.", call. = FALSE)
+  }
+
+  cat("Starting M1 matrix creation...\n")
 
   # Extract and combine all eventdata
   all_in_one_eventdata <- tryCatch({
-    do.call(rbind, lapply(junction_ab_object, \(x) x$eventdata))
+    eventdata_list <- lapply(junction_ab_object, function(x) {
+      if (!"eventdata" %in% names(x)) {
+        stop("Each element must contain 'eventdata' component.")
+      }
+      return(x$eventdata)
+    })
+    do.call(rbind, eventdata_list)
   }, error = function(e) {
-    stop("Error combining `eventdata`: ", e$message)
+    stop("Error combining `eventdata`: ", e$message, call. = FALSE)
   })
 
-  if (!"row_names_mtx" %in% colnames(all_in_one_eventdata)) {
-    stop("`eventdata` must contain a column named `row_names_mtx`.")
+  # Validate required columns
+  required_cols <- c("row_names_mtx", "start_cor_id", "end_cor_id")
+  missing_cols <- setdiff(required_cols, colnames(all_in_one_eventdata))
+  if (length(missing_cols) > 0) {
+    stop("`eventdata` must contain columns: ", paste(missing_cols, collapse = ", "), call. = FALSE)
   }
 
-  # Remove `sample_id` and deduplicate events
+  cat("Combined eventdata from", length(junction_ab_object), "samples\n")
+
+  # Remove sample_id and deduplicate events
   all_junctions <- unique(all_in_one_eventdata$row_names_mtx)
-  all_in_one_eventdata[, sample_id := NULL]
-  temp_eventdata <- all_in_one_eventdata[match(all_junctions, row_names_mtx), ]
+  cat("Found", length(all_junctions), "unique junctions\n")
 
-  # grouping based on first and last coordinates using data.table
-  if (!is.data.table(temp_eventdata)) {
-    setDT(temp_eventdata)
+  # Create a copy and remove sample_id if it exists
+  temp_eventdata <- data.table::copy(all_in_one_eventdata)
+  if ("sample_id" %in% colnames(temp_eventdata)) {
+    temp_eventdata[, sample_id := NULL]
   }
 
-  temp_eventdata[, `:=`(
-    start_cor_group_id = .GRP,
-    start_cor_group_count = .N
-  ), by = start_cor_id]
+  # Get unique events
+  temp_eventdata <- temp_eventdata[match(all_junctions, row_names_mtx), ]
 
-  temp_eventdata[, `:=`(
-    end_cor_group_id = .GRP,
-    end_cor_group_count = .N
-  ), by = end_cor_id]
+  # Convert to data.table if not already
+  if (!data.table::is.data.table(temp_eventdata)) {
+    data.table::setDT(temp_eventdata)
+  }
+
+  cat("Creating coordinate groups...\n")
+
+  # Group by start and end coordinates
+  tryCatch({
+    temp_eventdata[, `:=`(
+      start_cor_group_id = .GRP,
+      start_cor_group_count = .N
+    ), by = start_cor_id]
+
+    temp_eventdata[, `:=`(
+      end_cor_group_id = .GRP,
+      end_cor_group_count = .N
+    ), by = end_cor_id]
+  }, error = function(e) {
+    stop("Error creating coordinate groups: ", e$message, call. = FALSE)
+  })
 
   temp_eventdata_grouped <- temp_eventdata
 
-  # creating the event data for start coordinates groups
-  temp_eventdata_grouped_start <- data.table::copy(temp_eventdata_grouped)
-  temp_eventdata_grouped_start <- temp_eventdata_grouped_start[,c("index" ,"end_cor_group_id", "end_cor_group_count") := NULL]
-  temp_eventdata_grouped_start <- temp_eventdata_grouped_start[start_cor_group_count != 1,]
-  temp_eventdata_grouped_start[, start_cor_group_id := paste0(start_cor_group_id, "_S")]
-  temp_eventdata_grouped_start[, row_names_mtx_new := paste0(row_names_mtx, "_S")]
-  setnames(x = temp_eventdata_grouped_start,
-           old = c("row_names_mtx", "row_names_mtx_new"),
-           new = c("raw_row_names_mtx", "row_names_mtx"))
-
-  # creating the event data for end coordinates groups
-  temp_eventdata_grouped_end <- data.table::copy(temp_eventdata_grouped)
-  temp_eventdata_grouped_end <- temp_eventdata_grouped_end[, c("index" ,"start_cor_group_id", "start_cor_group_count") := NULL]
-  temp_eventdata_grouped_end <- temp_eventdata_grouped_end[end_cor_group_count != 1,]
-  temp_eventdata_grouped_end[, end_cor_group_id := paste0(end_cor_group_id, "_E")]
-  temp_eventdata_grouped_end[, row_names_mtx_new := paste0(row_names_mtx, "_E")]
-  setnames(x = temp_eventdata_grouped_end,
-           old = c("row_names_mtx", "row_names_mtx_new"),
-           new = c("raw_row_names_mtx", "row_names_mtx"))
-
-  # Combine start and end groups
-  if(ncol(temp_eventdata_grouped_end) == ncol(temp_eventdata_grouped_start)){
-    colnames(temp_eventdata_grouped_end) <- colnames(temp_eventdata_grouped_start)
-    eventdata <- rbind(temp_eventdata_grouped_start, temp_eventdata_grouped_end)
-  } else {
-    stop("The eventdata for start and end grouping have not the equal numbner of columns")
+  if (verbose) {
+    cat("Start coordinate groups:", max(temp_eventdata_grouped$start_cor_group_id, na.rm = TRUE), "\n")
+    cat("End coordinate groups:", max(temp_eventdata_grouped$end_cor_group_id, na.rm = TRUE), "\n")
   }
 
-  # Rename columns for clarity
-  setnames(x = eventdata,
-           old = c("start_cor_group_id", "start_cor_group_count"),
-           new = c("group_id", "group_count"))
+  # Create event data for start coordinate groups
+  temp_eventdata_grouped_start <- data.table::copy(temp_eventdata_grouped)
+  temp_eventdata_grouped_start <- temp_eventdata_grouped_start[, c("index", "end_cor_group_id", "end_cor_group_count") := NULL]
+
+  # Filter for alternative splicing events only (group count > 1)
+  temp_eventdata_grouped_start <- temp_eventdata_grouped_start[start_cor_group_count > 1, ]
+
+  if (nrow(temp_eventdata_grouped_start) > 0) {
+    temp_eventdata_grouped_start[, start_cor_group_id := paste0(start_cor_group_id, "_S")]
+    temp_eventdata_grouped_start[, row_names_mtx_new := paste0(row_names_mtx, "_S")]
+    data.table::setnames(x = temp_eventdata_grouped_start,
+                         old = c("row_names_mtx", "row_names_mtx_new"),
+                         new = c("raw_row_names_mtx", "row_names_mtx"))
+  }
+
+  # Create event data for end coordinate groups
+  temp_eventdata_grouped_end <- data.table::copy(temp_eventdata_grouped)
+  temp_eventdata_grouped_end <- temp_eventdata_grouped_end[, c("index", "start_cor_group_id", "start_cor_group_count") := NULL]
+
+  # Filter for alternative splicing events only (group count > 1)
+  temp_eventdata_grouped_end <- temp_eventdata_grouped_end[end_cor_group_count > 1, ]
+
+  if (nrow(temp_eventdata_grouped_end) > 0) {
+    temp_eventdata_grouped_end[, end_cor_group_id := paste0(end_cor_group_id, "_E")]
+    temp_eventdata_grouped_end[, row_names_mtx_new := paste0(row_names_mtx, "_E")]
+    data.table::setnames(x = temp_eventdata_grouped_end,
+                         old = c("row_names_mtx", "row_names_mtx_new"),
+                         new = c("raw_row_names_mtx", "row_names_mtx"))
+  }
+
+  cat("Start coordinate alternative events:", nrow(temp_eventdata_grouped_start), "\n")
+  cat("End coordinate alternative events:", nrow(temp_eventdata_grouped_end), "\n")
+
+  # Combine start and end groups
+  if (nrow(temp_eventdata_grouped_start) == 0 && nrow(temp_eventdata_grouped_end) == 0) {
+    stop("No alternative splicing events found (all groups have count = 1)", call. = FALSE)
+  }
+
+  if (nrow(temp_eventdata_grouped_start) > 0 && nrow(temp_eventdata_grouped_end) > 0) {
+    if (ncol(temp_eventdata_grouped_end) == ncol(temp_eventdata_grouped_start)) {
+      colnames(temp_eventdata_grouped_end) <- colnames(temp_eventdata_grouped_start)
+      eventdata <- rbind(temp_eventdata_grouped_start, temp_eventdata_grouped_end)
+    } else {
+      stop("The eventdata for start and end grouping have different numbers of columns", call. = FALSE)
+    }
+  } else if (nrow(temp_eventdata_grouped_start) > 0) {
+    eventdata <- temp_eventdata_grouped_start
+  } else {
+    eventdata <- temp_eventdata_grouped_end
+    # Rename columns to match start naming convention
+    data.table::setnames(x = eventdata,
+                         old = c("end_cor_group_id", "end_cor_group_count"),
+                         new = c("group_id", "group_count"))
+  }
+
+  # Rename columns for clarity (only if they exist)
+  if ("start_cor_group_id" %in% colnames(eventdata) && "start_cor_group_count" %in% colnames(eventdata)) {
+    data.table::setnames(x = eventdata,
+                         old = c("start_cor_group_id", "start_cor_group_count"),
+                         new = c("group_id", "group_count"))
+  }
+
+  cat("Combined eventdata has", nrow(eventdata), "alternative splicing events\n")
 
   # Create a table for all events
   all_events <- eventdata[, .(raw_row_names_mtx, row_names_mtx)]
-  all_events[, group_type := sub("^.*(.$)", "\\1", row_names_mtx)]
+  all_events[, group_type := sub("^.*(.)$", "\\1", row_names_mtx)]
 
   # Process and merge all junction abundance matrices
-  process_junction_ab_matrices <- function(junction_ab_object, all_events, eventdata) {
+  process_junction_ab_matrices <- function(junction_ab_object, all_events, eventdata, min_counts, verbose) {
+    cat("Processing junction abundance matrices...\n")
+
     # Initialize the final merged matrix
     m1_raw <- Matrix::sparseMatrix(
       i = integer(0),
@@ -285,69 +442,154 @@ make_m1 <- function(junction_ab_object) {
       dimnames = list(eventdata$row_names_mtx, NULL)
     )
 
-    lapply(seq_along(junction_ab_object), function(j) {
-      # Extract current matrix and events
-      little_m1 <- junction_ab_object[[j]]
-      current_matrix <- little_m1[[2]]
-      current_events <- data.table(raw_row_names_mtx = rownames(current_matrix))
+    for (j in seq_along(junction_ab_object)) {
+      if (verbose) cat("Processing sample", j, "of", length(junction_ab_object), "\n")
 
-      # Process start and end events
-      start_events <- all_events[group_type == "S"]
-      matched_start <- merge(current_events, start_events, by = "raw_row_names_mtx", sort = FALSE)
-      start_matrix <- current_matrix[matched_start$raw_row_names_mtx, ]
-      rownames(start_matrix) <- matched_start$row_names_mtx
+      tryCatch({
+        # Extract current matrix and events
+        little_m1 <- junction_ab_object[[j]]
 
-      end_events <- all_events[group_type == "E"]
-      matched_end <- merge(current_events, end_events, by = "raw_row_names_mtx", sort = FALSE)
-      end_matrix <- current_matrix[matched_end$raw_row_names_mtx, ]
-      rownames(end_matrix) <- matched_end$row_names_mtx
+        if (!"junction_ab" %in% names(little_m1)) {
+          stop("Sample ", j, " missing 'junction_ab' component")
+        }
 
-      # Merge start and end matrices
-      merged_matrix <- rbind(start_matrix, end_matrix)
+        current_matrix <- little_m1[["junction_ab"]]
+        current_events <- data.table::data.table(raw_row_names_mtx = rownames(current_matrix))
 
-      # Add missing events
-      missing_events <- setdiff(eventdata$row_names_mtx, rownames(merged_matrix))
-      if (length(missing_events) > 0) {
-        missing_matrix <- Matrix(0, nrow = length(missing_events), ncol = ncol(current_matrix), sparse = TRUE)
-        rownames(missing_matrix) <- missing_events
-        merged_matrix <- rbind(merged_matrix, missing_matrix)
-      }
+        # Process start and end events
+        start_events <- all_events[group_type == "S"]
+        end_events <- all_events[group_type == "E"]
 
-      # Reorder rows
-      final_matrix <- merged_matrix[eventdata$row_names_mtx, ]
+        combined_matrix_parts <- list()
 
-      # Combine into the final matrix
-      m1_raw <<- cbind(m1_raw, final_matrix)
+        if (nrow(start_events) > 0) {
+          matched_start <- merge(current_events, start_events, by = "raw_row_names_mtx", sort = FALSE)
+          if (nrow(matched_start) > 0) {
+            start_matrix <- current_matrix[matched_start$raw_row_names_mtx, , drop = FALSE]
+            rownames(start_matrix) <- matched_start$row_names_mtx
+            combined_matrix_parts[["start"]] <- start_matrix
+          }
+        }
 
-      # Log progress
-      cat("Processed matrix:", names(junction_ab_object)[j], "\n")
-    })
+        if (nrow(end_events) > 0) {
+          matched_end <- merge(current_events, end_events, by = "raw_row_names_mtx", sort = FALSE)
+          if (nrow(matched_end) > 0) {
+            end_matrix <- current_matrix[matched_end$raw_row_names_mtx, , drop = FALSE]
+            rownames(end_matrix) <- matched_end$row_names_mtx
+            combined_matrix_parts[["end"]] <- end_matrix
+          }
+        }
+
+        # Combine matrices
+        if (length(combined_matrix_parts) > 0) {
+          merged_matrix <- do.call(rbind, combined_matrix_parts)
+        } else {
+          # Create empty matrix with correct dimensions
+          merged_matrix <- Matrix::sparseMatrix(
+            i = integer(0), j = integer(0),
+            dims = c(0, ncol(current_matrix)),
+            dimnames = list(character(0), colnames(current_matrix))
+          )
+        }
+
+        # Add missing events as zero rows
+        missing_events <- setdiff(eventdata$row_names_mtx, rownames(merged_matrix))
+        if (length(missing_events) > 0) {
+          missing_matrix <- Matrix::sparseMatrix(
+            i = integer(0), j = integer(0),
+            dims = c(length(missing_events), ncol(current_matrix)),
+            dimnames = list(missing_events, colnames(current_matrix))
+          )
+          merged_matrix <- rbind(merged_matrix, missing_matrix)
+        }
+
+        # Reorder rows to match eventdata
+        final_matrix <- merged_matrix[eventdata$row_names_mtx, , drop = FALSE]
+
+        # Combine into the final matrix
+        m1_raw <- cbind(m1_raw, final_matrix)
+
+        # Log progress
+        if(verbose) cat("Processed matrix:", names(junction_ab_object)[j], "\n")
+
+      }, error = function(e) {
+        stop("Error processing sample ", j, " (", names(junction_ab_object)[j], "): ", e$message, call. = FALSE)
+      })
+    }
 
     return(m1_raw)
   }
 
   # Process all matrices
-  m1 <- process_junction_ab_matrices(junction_ab_object, all_events, eventdata)
+  m1 <- process_junction_ab_matrices(junction_ab_object, all_events, eventdata, min_counts, verbose)
 
-  # Verify matrix row order and return results
-  if (!identical(rownames(m1), eventdata$row_names_mtx)) {
-    m1 <- m1[eventdata$row_names_mtx, ]
+  cat("Applying count threshold filtering...\n")
+
+  # Filter based on rowSums threshold
+  row_sums <- Matrix::rowSums(m1)
+  events_to_keep <- row_sums >= min_counts
+
+  if (sum(events_to_keep) == 0) {
+    stop("No events pass the minimum count threshold of ", min_counts, call. = FALSE)
+  }
+
+  # Filter matrix and eventdata
+  m1_filtered <- m1[events_to_keep, , drop = FALSE]
+  eventdata_filtered <- eventdata[events_to_keep, ]
+
+  cat("Filtered from", nrow(m1), "to", nrow(m1_filtered), "events\n")
+  cat("Events removed:", sum(!events_to_keep), "\n")
+
+  # Verify matrix row order
+  if (!identical(rownames(m1_filtered), eventdata_filtered$row_names_mtx)) {
+    m1_filtered <- m1_filtered[eventdata_filtered$row_names_mtx, , drop = FALSE]
   }
 
   cat("Finished processing M1.\n")
-  return(list(
-    m1_inclusion_matrix = m1,
-    event_data = eventdata
-  ))
+
+  # Return results with summary
+  result <- list(
+    m1_inclusion_matrix = m1_filtered,
+    event_data = eventdata_filtered,
+    summary = list(
+      total_events_input = length(all_junctions),
+      alternative_events_found = nrow(eventdata),
+      events_passing_threshold = nrow(eventdata_filtered),
+      min_counts_threshold = min_counts,
+      samples_processed = length(junction_ab_object),
+      total_cells = ncol(m1_filtered)
+    )
+  )
+
+  cat("\nSummary:\n")
+  cat("  Input junctions:", result$summary$total_events_input, "\n")
+  cat("  Alternative splicing events:", result$summary$alternative_events_found, "\n")
+  cat("  Events passing threshold:", result$summary$events_passing_threshold, "\n")
+  cat("  Total cells:", result$summary$total_cells, "\n")
+
+  return(result)
 }
 
-#' make_m2
+#' make_m2 (Integrated with Automatic Batching)
 #'
-#' Creates the M2 matrix from a given m1_inclusion_matrix and eventdata, ensuring the proper processing of group indices and matrix operations.
+#' Creates the M2 matrix from a given m1_inclusion_matrix and eventdata with intelligent
+#' memory management. Automatically detects when the operation would exceed memory limits
+#' and switches to a batched sparse matrix approach.
 #'
 #' @param m1_inclusion_matrix A sparse matrix to be modified and used for creating the M2 matrix.
 #' @param eventdata A data.table containing event information with at least `group_id` and an index column.
+#' @param batch_size An integer specifying the number of groups to process per batch (default: 5000).
+#'   Only used when batched processing is triggered.
+#' @param memory_threshold A numeric value representing the maximum number of rows allowed in the
+#'   summary before switching to batched processing (default: 2e9, which is ~93% of 2^31).
+#' @param force_fast A logical flag to force fast processing regardless of size estimates (default: FALSE).
+#'   WARNING: This may cause memory errors on large datasets.
+#' @param multi_thread A logical flag to enable parallel processing for batched operations (default: FALSE).
+#'   Only used when batched processing is triggered. Requires parallel package.
+#' @param verbose A logical flag for detailed progress reporting (default: FALSE).
+#'
 #' @return A sparse matrix M2 with the dummy row removed and proper adjustments made.
+#'
 #' @examples
 #' junction_abundance_object <- load_toy_SJ_object()
 #' m1_obj <- make_m1(junction_ab_object = junction_abundance_object)
@@ -362,61 +604,210 @@ make_m1 <- function(junction_ab_object) {
 #' @importFrom data.table is.data.table := data.table as.data.table
 #'
 #' @export
-make_m2 <- function(m1_inclusion_matrix, eventdata) {
+make_m2 <- function(m1_inclusion_matrix, eventdata, batch_size = 5000,
+                    memory_threshold = 2e9, force_fast = FALSE,
+                    multi_thread = FALSE, verbose = FALSE) {
+
   # Input validation
   if (missing(m1_inclusion_matrix) || !inherits(m1_inclusion_matrix, "sparseMatrix")) {
-    stop("Error: 'm1_inclusion_matrix' must be a sparse matrix and cannot be NULL.")
+    stop("Error: 'm1_inclusion_matrix' must be a sparse matrix and cannot be NULL.", call. = FALSE)
   }
   if (missing(eventdata) || !is.data.table(eventdata)) {
-    stop("Error: 'eventdata' must be a data.table and cannot be NULL.")
+    stop("Error: 'eventdata' must be a data.table and cannot be NULL.", call. = FALSE)
   }
   if (!"group_id" %in% colnames(eventdata)) {
-    stop("Error: 'eventdata' must contain a 'group_id' column.")
+    stop("Error: 'eventdata' must contain a 'group_id' column.", call. = FALSE)
+  }
+  if (!is.numeric(batch_size) || batch_size <= 0) {
+    stop("Error: 'batch_size' must be a positive integer.", call. = FALSE)
+  }
+  if (!is.numeric(memory_threshold) || memory_threshold <= 0) {
+    stop("Error: 'memory_threshold' must be a positive number.", call. = FALSE)
+  }
+  if (!is.logical(force_fast) || length(force_fast) != 1) {
+    stop("Error: 'force_fast' must be a logical value (TRUE or FALSE).", call. = FALSE)
+  }
+  if (!is.logical(multi_thread) || length(multi_thread) != 1) {
+    stop("Error: 'multi_thread' must be a logical value (TRUE or FALSE).", call. = FALSE)
   }
 
+  # Check for parallel package if multi_thread is requested
+  if (multi_thread && !requireNamespace("parallel", quietly = TRUE)) {
+    stop("Error: 'parallel' package is required for multi_thread=TRUE but is not installed.", call. = FALSE)
+  }
+
+  cat("Starting M2 matrix creation...\n")
 
   # Add an index column to eventdata
   eventdata[, i := .I]
 
   # Create a dummy row and append to m1_inclusion_matrix
-  dummy <- Matrix(data = 1, ncol = ncol(m1_inclusion_matrix), nrow = 1, sparse = TRUE, dimnames = list("dummy", colnames(m1_inclusion_matrix)))
-  m1_inclusion_matrix <- rbind(m1_inclusion_matrix, dummy)
+  tryCatch({
+    dummy <- Matrix::Matrix(data = 1, ncol = ncol(m1_inclusion_matrix),
+                            nrow = 1, sparse = TRUE,
+                            dimnames = list("dummy", colnames(m1_inclusion_matrix)))
+    m1_inclusion_matrix <- rbind(m1_inclusion_matrix, dummy)
+  }, error = function(e) {
+    stop("Error creating dummy row: ", e$message, call. = FALSE)
+  })
 
-  cat("┌── Step 1 | Modifying the m1_inclusion_matrix\n")
+  cat("+-- Step 1 | Modifying the m1_inclusion_matrix\n")
 
   # Add dummy group to group_ids
-  dummy_group <- data.table(i = nrow(m1_inclusion_matrix), group_id = 'dummy')
+  dummy_group <- data.table::data.table(i = nrow(m1_inclusion_matrix), group_id = "dummy")
   group_ids <- eventdata[, .(i, group_id)]
   group_ids <- rbind(group_ids, dummy_group)
+  rm(dummy_group)
 
-  rm(dummy_group)  # Remove intermediate variable
+  # Extract basic information for size estimation
+  num_barcodes <- ncol(m1_inclusion_matrix)
+  num_events <- nrow(eventdata)
+  unique_groups <- unique(group_ids$group_id)
+  num_groups <- length(unique_groups)
 
-  # Add group index and initialize variables
-  num_cells <- ncol(m1_inclusion_matrix)
-  groups_start_vector <- eventdata[, unique(group_id)]
+  cat("|-- Dataset Information:\n")
+  cat("|   |-- Number of barcodes: ", formatC(num_barcodes, format = "d", big.mark = ","), "\n")
+  cat("|   |-- Number of events: ", formatC(num_events, format = "d", big.mark = ","), "\n")
+  cat("|   +-- Number of groups: ", formatC(num_groups, format = "d", big.mark = ","), "\n")
 
-  cat("├── Step 2 | Creating M2\n")
+  # Estimate memory requirements for the fast approach
+  cat("+-- Step 2 | Analyzing memory requirements\n")
 
-  # Convert m1_inclusion_matrix to data.table
-  m1 <- summary(m1_inclusion_matrix) |> as.data.table()
-  setnames(m1, 'x', 'x_1')
+  # Get the number of non-zero elements in the sparse matrix
+  nnz_elements <- Matrix::nnzero(m1_inclusion_matrix)
 
-  # Merge group information
-  m1 <- merge(m1, group_ids, by = 'i')
-  m1[, x_tot := sum(x_1), .(group_id, j)]
-  m_tot <- m1[, .(group_id, j, x_tot)] |> unique()
+  cat("|   |-- Non-zero elements in matrix: ", formatC(nnz_elements, format = "d", big.mark = ","), "\n")
+  cat("|   |-- Memory threshold: ", formatC(memory_threshold, format = "d", big.mark = ","), " rows\n")
 
-  # Filter and merge relevant data
-  m_tot <- m_tot[x_tot > 0]
-  m_tot <- merge(m_tot, group_ids, by = 'group_id', allow.cartesian = TRUE)
-  m_tot <- merge(m_tot, m1, by = c('group_id', 'i', 'j', 'x_tot'), all.x = TRUE)
-  m_tot[is.na(x_1), x_1 := 0]
-  m_tot[, x_2 := x_tot - x_1]
+  # Estimate the size of operations based on matrix sparsity and group structure
+  # This is a conservative estimate based on the summary size and potential Cartesian products
 
-  # Create sparse matrix for M2_train
-  M2_train <- m_tot[, sparseMatrix(i = i, j = j, x = x_2)]
+  # Calculate group statistics for better estimation
+  tryCatch({
+    group_sizes <- group_ids[, .(group_size = .N), by = group_id]
+    max_group_size <- max(group_sizes$group_size)
+    avg_group_size <- mean(group_sizes$group_size)
+  }, error = function(e) {
+    stop("Error calculating group statistics: ", e$message, call. = FALSE)
+  })
 
-  cat("├── Step 3 | Finalizing M2 creation\n")
+  # Safe multiplication to avoid integer overflow
+  # Convert to numeric to handle large numbers safely
+  estimated_operations <- tryCatch({
+    as.numeric(nnz_elements) * as.numeric(max_group_size)
+  }, error = function(e) {
+    # If there's still an error, assume it's very large and use batched approach
+    Inf
+  })
+
+  # Handle NA or overflow cases
+  if (is.na(estimated_operations) || is.infinite(estimated_operations)) {
+    estimated_operations <- Inf
+    cat("|   |-- WARNING: Calculation overflow detected - dataset is very large\n")
+  }
+
+  if (verbose) {
+    cat("|   |-- Maximum group size: ", formatC(max_group_size, format = "d", big.mark = ","), "\n")
+    cat("|   |-- Average group size: ", round(avg_group_size, 2), "\n")
+    if (is.finite(estimated_operations)) {
+      cat("|   |-- Estimated operation size: ", formatC(estimated_operations, format = "d", big.mark = ","), "\n")
+    } else {
+      cat("|   |-- Estimated operation size: Very large (overflow detected)\n")
+    }
+  }
+
+  # Decide on processing approach - use batched if overflow or exceeds threshold
+  # unless forced to use fast approach
+  should_use_batched <- is.na(estimated_operations) ||
+    is.infinite(estimated_operations) ||
+    estimated_operations > memory_threshold
+
+  use_batched_approach <- should_use_batched && !force_fast
+
+  if (force_fast && should_use_batched) {
+    if (is.finite(estimated_operations)) {
+      cat("|   |-- WARNING: force_fast=TRUE but estimated size (",
+          formatC(estimated_operations, format = "d", big.mark = ","),
+          ") exceeds threshold!\n")
+    } else {
+      cat("|   |-- WARNING: force_fast=TRUE but dataset size suggests overflow risk!\n")
+    }
+    cat("|   |-- Proceeding with fast approach as requested - monitor memory usage\n")
+  }
+
+  if (use_batched_approach) {
+    if (is.finite(estimated_operations)) {
+      cat("|   |-- Estimated size exceeds memory threshold!\n")
+    } else {
+      cat("|   |-- Dataset size suggests high overflow risk!\n")
+    }
+    cat("|   +-- Automatically switching to batched processing approach\n")
+
+    # Call the batched processing function
+    result <- .make_m2_batched(m1_inclusion_matrix, group_ids, batch_size,
+                               unique_groups, multi_thread, verbose)
+  } else {
+    if (force_fast) {
+      cat("|   |-- Using fast processing approach (forced by user)\n")
+    } else {
+      cat("|   |-- Memory requirements within limits\n")
+      cat("|   +-- Using fast processing approach\n")
+    }
+
+    # Call the fast processing function
+    result <- .make_m2_fast(m1_inclusion_matrix, group_ids, verbose)
+  }
+
+  cat("Finished M2 matrix creation.\n")
+  return(result)
+}
+
+#' Fast M2 Processing (Internal Function)
+#'
+#' Implements the original fast approach using data.table operations.
+#' This approach creates the full operation in memory at once.
+.make_m2_fast <- function(m1_inclusion_matrix, group_ids, verbose) {
+
+  cat("+-- Step 3 | Creating M2 (fast approach)\n")
+
+  tryCatch({
+    # Convert m1_inclusion_matrix to data.table
+    m1 <- summary(m1_inclusion_matrix) |> data.table::as.data.table()
+    data.table::setnames(m1, "x", "x_1")
+
+    if (verbose) cat("|   |-- Converted matrix to data.table format\n")
+
+    # Merge group information
+    m1 <- merge(m1, group_ids, by = "i")
+    m1[, x_tot := sum(x_1), .(group_id, j)]
+    m_tot <- m1[, .(group_id, j, x_tot)] |> unique()
+
+    if (verbose) cat("|   |-- Calculated group totals\n")
+
+    # Filter and merge relevant data
+    m_tot <- m_tot[x_tot > 0]
+    m_tot <- merge(m_tot, group_ids, by = "group_id", allow.cartesian = TRUE)
+    m_tot <- merge(m_tot, m1, by = c("group_id", "i", "j", "x_tot"), all.x = TRUE)
+    m_tot[is.na(x_1), x_1 := 0]
+    m_tot[, x_2 := x_tot - x_1]
+
+    if (verbose) cat("|   |-- Created final calculation table\n")
+
+    # Create sparse matrix for M2_train
+    M2_train <- m_tot[, Matrix::sparseMatrix(i = i, j = j, x = x_2)]
+
+    if (verbose) cat("|   +-- Generated M2 sparse matrix\n")
+
+  }, error = function(e) {
+    if (grepl("2\\^31", e$message) || grepl("vecseq", e$message)) {
+      stop("Memory limit exceeded in fast approach. The dataset is too large for the fast method. ",
+           "Please try reducing the data size or contact support.", call. = FALSE)
+    } else {
+      stop("Error in fast M2 processing: ", e$message, call. = FALSE)
+    }
+  })
+
+  cat("+-- Step 4 | Finalizing M2 creation\n")
 
   # Set row and column names
   rownames(M2_train) <- rownames(m1_inclusion_matrix)
@@ -425,7 +816,136 @@ make_m2 <- function(m1_inclusion_matrix, eventdata) {
   # Remove dummy row from M2_train
   M2 <- M2_train[-nrow(M2_train), ]
 
-  cat("└── All done!")
+  cat("+-- All done!\n")
+  return(M2)
+}
+
+#' Batched M2 Processing (Internal Function)
+#'
+#' Implements the batched triplet combination approach for memory-efficient processing.
+#' Processes groups in batches using lapply/mclapply and combines results efficiently.
+.make_m2_batched <- function(m1_inclusion_matrix, group_ids, batch_size,
+                             unique_groups, multi_thread, verbose) {
+
+  cat("+-- Step 3 | Creating M2 (batched processing approach)\n")
+
+  # Prepare batch processing
+  n_groups <- length(unique_groups)
+  n_batches <- ceiling(n_groups / batch_size)
+
+  cat("|   |-- Processing ", n_groups, " groups in ", n_batches, " batches\n")
+
+  if (multi_thread) {
+    cat("|   |-- Using parallel processing with mclapply\n")
+  } else {
+    cat("|   |-- Using sequential processing with lapply\n")
+  }
+
+  # Store target dimensions for final sparse matrix creation
+  target_nrow <- nrow(m1_inclusion_matrix)
+  target_ncol <- ncol(m1_inclusion_matrix)
+
+  # Convert m1_inclusion_matrix to data.table for merging (once, outside the apply)
+  tryCatch({
+    m1 <- summary(m1_inclusion_matrix) |> data.table::as.data.table()
+    data.table::setnames(m1, "x", "x_1")
+    m1 <- merge(m1, group_ids, by = "i")
+
+    # Pre-calculate group totals for all groups
+    m1[, x_tot := sum(x_1), .(group_id, j)]
+    group_cols <- unique(m1[x_tot > 0, .(group_id, j, x_tot)])
+
+    if (verbose) cat("|   |-- Pre-calculated group totals for all groups\n")
+
+  }, error = function(e) {
+    stop("Error in initial data preparation for batched processing: ", e$message, call. = FALSE)
+  })
+
+  # Create batch processing function
+  process_batch <- function(batch_idx) {
+    tryCatch({
+      start_idx <- (batch_idx - 1) * batch_size + 1
+      end_idx <- min(batch_idx * batch_size, n_groups)
+      current_groups <- unique_groups[start_idx:end_idx]
+
+      if (verbose) {
+        cat("|   |---- Processing batch ", batch_idx, " of ", n_batches,
+            " (groups ", start_idx, " to ", end_idx, ")\n")
+      }
+
+      # Get subset for current batch
+      batch_group_cols <- group_cols[group_id %in% current_groups]
+      batch_group_ids <- group_ids[group_id %in% current_groups]
+
+      # Create Cartesian product for this batch only
+      batch_grid <- merge(batch_group_cols, batch_group_ids,
+                          by = "group_id", allow.cartesian = TRUE)
+
+      # Merge with original data
+      batch_result <- merge(batch_grid,
+                            m1[group_id %in% current_groups, .(group_id, i, j, x_1)],
+                            by = c("group_id", "i", "j"), all.x = TRUE)
+
+      # Calculate x_2
+      batch_result[is.na(x_1), x_1 := 0]
+      batch_result[, x_2 := x_tot - x_1]
+
+      # Return only the triplet data (i, j, x_2)
+      return(batch_result[, .(i, j, x_2)])
+
+    }, error = function(e) {
+      stop("Error processing batch ", batch_idx, ": ", e$message, call. = FALSE)
+    })
+  }
+
+  # Process all batches using lapply or mclapply
+  batch_triplets <- tryCatch({
+    if (multi_thread) {
+      parallel::mclapply(1:n_batches, process_batch, mc.cores = parallel::detectCores())
+    } else {
+      lapply(1:n_batches, process_batch)
+    }
+  }, error = function(e) {
+    stop("Error in batch processing: ", e$message, call. = FALSE)
+  })
+
+  # Combine all triplets and create final sparse matrix
+  cat("|   +---- Combining all triplets and creating final sparse matrix\n")
+
+  tryCatch({
+    # Combine all triplet data.tables
+    all_triplets <- data.table::rbindlist(batch_triplets)
+
+    # Clean up batch triplets to free memory
+    rm(batch_triplets)
+    gc()
+
+    # Create the final sparse matrix from combined triplets
+    M2_train <- Matrix::sparseMatrix(
+      i = all_triplets$i,
+      j = all_triplets$j,
+      x = all_triplets$x_2,
+      dims = c(target_nrow, target_ncol)
+    )
+
+    # Clean up triplets
+    rm(all_triplets)
+    gc()
+
+  }, error = function(e) {
+    stop("Error combining triplets and creating final matrix: ", e$message, call. = FALSE)
+  })
+
+  cat("+-- Step 4 | Finalizing M2 creation\n")
+
+  # Set row and column names
+  rownames(M2_train) <- rownames(m1_inclusion_matrix)
+  colnames(M2_train) <- colnames(m1_inclusion_matrix)
+
+  # Remove the dummy row
+  M2 <- M2_train[-nrow(M2_train), ]
+
+  cat("+-- All done!\n")
   return(M2)
 }
 
@@ -577,7 +1097,7 @@ make_gene_count <- function(expression_dirs, sample_ids, whitelist_barcodes = NU
     if (!file.exists(expression_features_dir)) stop("No features file found for sample: ", sample_id, call. = FALSE)
 
     # Read gene expression data
-    cat("├── Processing gene expression data for sample: ", sample_id, "\n")
+    cat("|-- Processing gene expression data for sample: ", sample_id, "\n")
     g_mtx <- Matrix::readMM(expression_matrix_dir)
     g_brc <- data.table::fread(expression_barcodes_dir, header = FALSE, showProgress = FALSE)$V1
     g_feature <- data.table::fread(expression_features_dir, header = FALSE, showProgress = FALSE)
@@ -588,10 +1108,10 @@ make_gene_count <- function(expression_dirs, sample_ids, whitelist_barcodes = NU
 
     # Apply barcode filtration
     if (!is.null(whitelist_barcode)) {
-      cat("│  ├──  Applying provided whitelist for sample: ", sample_id, "\n")
+      cat("|  |--  Applying provided whitelist for sample: ", sample_id, "\n")
     } else if (use_internal_whitelist && file.exists(filtered_barcodes_dir)) {
       whitelist_barcode <- data.table::fread(filtered_barcodes_dir, header = FALSE, showProgress = FALSE)$V1
-      cat("│  ├──  Using filtered barcodes for sample: ", sample_id, "\n")
+      cat("|  |--  Using filtered barcodes for sample: ", sample_id, "\n")
     }
 
     if (!is.null(whitelist_barcode)) {
@@ -606,10 +1126,10 @@ make_gene_count <- function(expression_dirs, sample_ids, whitelist_barcodes = NU
         stop("All barcodes were removed after filtration for sample: ", sample_id, call. = FALSE)
       }
 
-      cat("│  ├──  Filtered barcodes applied for sample: ", sample_id,
+      cat("|  |--  Filtered barcodes applied for sample: ", sample_id,
           " (Remaining barcodes: ", final_barcodes, ")\n")
     } else {
-      cat("│  ├──  No barcode filtration applied for sample: ", sample_id, "\n")
+      cat("|  |--  No barcode filtration applied for sample: ", sample_id, "\n")
     }
 
     # Append sample_id to column names
@@ -625,7 +1145,7 @@ make_gene_count <- function(expression_dirs, sample_ids, whitelist_barcodes = NU
 
     # Return processed matrix and summary
     g_mtx <- as(g_mtx, "CsparseMatrix")
-    cat("│  └── Finished processing gene expression data for sample: ", sample_id, "\n")
+    cat("|  +-- Finished processing gene expression data for sample: ", sample_id, "\n")
     return(list(gene_expression = g_mtx, summary = summary_row))
   }
 
@@ -741,7 +1261,7 @@ make_velo_count <- function(velocyto_dirs, sample_ids, whitelist_barcodes = NULL
     if (!file.exists(features_dir)) stop("No features file found for sample: ", sample_id, call. = FALSE)
 
     # Read Velocyto data
-    cat("├── Processing Velocyto data for sample: ", sample_id, "\n")
+    cat("|-- Processing Velocyto data for sample: ", sample_id, "\n")
     spliced_mtx <- Matrix::readMM(spliced_dir)
     unspliced_mtx <- Matrix::readMM(unspliced_dir)
     stab_barcode <- data.table::fread(barcodes_dir, header = FALSE, showProgress = FALSE)$V1
@@ -755,10 +1275,10 @@ make_velo_count <- function(velocyto_dirs, sample_ids, whitelist_barcodes = NULL
 
     # Apply barcode filtration
     if (!is.null(whitelist_barcode)) {
-      cat("│  ├──  Applying provided whitelist for sample: ", sample_id, "\n")
+      cat("|  |--  Applying provided whitelist for sample: ", sample_id, "\n")
     } else if (use_internal_whitelist && file.exists(filtered_barcodes_dir)) {
       whitelist_barcode <- data.table::fread(filtered_barcodes_dir, header = FALSE, showProgress = FALSE)$V1
-      cat("│  ├──  Using filtered barcodes for sample: ", sample_id, "\n")
+      cat("|  |--  Using filtered barcodes for sample: ", sample_id, "\n")
     }
 
     if (!is.null(whitelist_barcode)) {
@@ -775,10 +1295,10 @@ make_velo_count <- function(velocyto_dirs, sample_ids, whitelist_barcodes = NULL
         stop("All barcodes were removed after filtration for sample: ", sample_id, call. = FALSE)
       }
 
-      cat("│  ├──  Filtered barcodes applied for sample: ", sample_id,
+      cat("|  |--  Filtered barcodes applied for sample: ", sample_id,
           " (Remaining barcodes: ", final_barcodes, ")\n")
     } else {
-      cat("│  ├──  No barcode filtration applied for sample: ", sample_id, "\n")
+      cat("|  |--  No barcode filtration applied for sample: ", sample_id, "\n")
     }
 
     # Append sample ID to column names
@@ -794,7 +1314,7 @@ make_velo_count <- function(velocyto_dirs, sample_ids, whitelist_barcodes = NULL
     )
 
     # Return processed matrices and summary
-    cat("│  └── Finished processing Velocyto data for sample: ", sample_id, "\n")
+    cat("|  +-- Finished processing Velocyto data for sample: ", sample_id, "\n")
     return(list(
       spliced = as(spliced_mtx, "CsparseMatrix"),
       unspliced = as(unspliced_mtx, "CsparseMatrix"),

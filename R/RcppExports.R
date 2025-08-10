@@ -13,12 +13,24 @@ calcDeviances_ratio <- function(M1, M2, num_threads = 1L) {
     .Call(`_splikit_calcDeviances_ratio`, M1, M2, num_threads)
 }
 
-cppBetabinPseudoR2 <- function(Z, m1, m2) {
-    .Call(`_splikit_cppBetabinPseudoR2`, Z, m1, m2)
+cppBetabinPseudoR2 <- function(Z, m1, m2, metric = "CoxSnell") {
+    .Call(`_splikit_cppBetabinPseudoR2`, Z, m1, m2, metric)
 }
 
-calcNBDeviancesWithThetaEstimation <- function(gene_expression) {
-    .Call(`_splikit_calcNBDeviancesWithThetaEstimation`, gene_expression)
+cppBetabinPseudoR2_sparse <- function(Z, m1, m2, metric = "CoxSnell") {
+    .Call(`_splikit_cppBetabinPseudoR2_sparse`, Z, m1, m2, metric)
+}
+
+cppBetabinPseudoR2_mixed1 <- function(Z, m1, m2, metric = "CoxSnell") {
+    .Call(`_splikit_cppBetabinPseudoR2_mixed1`, Z, m1, m2, metric)
+}
+
+cppBetabinPseudoR2_mixed2 <- function(Z, m1, m2, metric = "CoxSnell") {
+    .Call(`_splikit_cppBetabinPseudoR2_mixed2`, Z, m1, m2, metric)
+}
+
+calcNBDeviancesWithThetaEstimation <- function(gene_expression, num_threads = 1L) {
+    .Call(`_splikit_calcNBDeviancesWithThetaEstimation`, gene_expression, num_threads)
 }
 
 standardizeSparse_variance_vst <- function(matSEXP, display_progress = FALSE) {

@@ -1,3 +1,12 @@
+---
+title: "Splikit Manual for Single-Cell Splicing Analysis"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Splikit Manual for Single-Cell Splicing Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
 # Splikit Manual for Single-Cell Splicing Analysis
 
 ## Table of Contents
@@ -42,7 +51,7 @@ where $J$ denotes the set of all junctions in the LJV. The grouping method is de
 
 We also address sample-specific junctions. If a junction is present in only a subset of samples, a vector of zeros is assigned to the M1 matrix for the samples where the junction is absent. The M2 measurements are then computed accordingly. This figure illustrates two exemplary LJVs.
 
-<img src="/man/figures/Markdown_figure.jpg" align="center" height="680"/>
+<img src="../man/figures/Markdown_figure.jpg" align="center" height="680"/>
 
 Traditional single-cell RNA-seq analysis focuses primarily on gene expression levels, but alternative splicing represents an additional layer of cellular complexity. Splikit enables researchers to:
 
@@ -178,7 +187,8 @@ head(variable_events[order(-sum_deviance)])
 **Function Signature**:
 ```r
 make_junction_ab(STARsolo_SJ_dirs, white_barcode_lists = NULL, 
-                 sample_ids, use_internal_whitelist = TRUE)
+                 sample_ids, use_internal_whitelist = TRUE, 
+                 verbose = FALSE, keep_multi_mapped_junctions = FALSE, ...)
 ```
 
 **Parameters**:
@@ -186,7 +196,10 @@ make_junction_ab(STARsolo_SJ_dirs, white_barcode_lists = NULL,
 - `STARsolo_SJ_dirs`: Character vector of paths to STARsolo SJ directories
 - `white_barcode_lists`: Optional list of barcode whitelists for filtering
 - `sample_ids`: Unique identifiers for each sample
-- `use_internal_whitelist`: Whether to use STARsolo's internal filtered barcodes
+- `use_internal_whitelist`: Whether to use STARsolo's internal filtered barcodes (default TRUE)
+- `verbose`: Logical for detailed progress reporting (default FALSE)
+- `keep_multi_mapped_junctions`: Whether to keep multi-mapped junctions (default FALSE)
+- `...`: Additional parameters for future extensions
 
 **Expected Directory Structure**:
 ```
@@ -248,11 +261,13 @@ The `eventdata` component contains crucial information for each junction:
 
 **Function Signature**:
 ```r
-make_m1(junction_ab_object)
+make_m1(junction_ab_object, min_counts = 1, verbose = FALSE)
 ```
 
 **Parameters**:
 - `junction_ab_object`: Output from `make_junction_ab()`
+- `min_counts`: Minimum count threshold for filtering events (default 1)
+- `verbose`: Logical for detailed progress reporting (default FALSE)
 
 **The Coordinate Grouping Process**:
 
@@ -291,16 +306,23 @@ The M1 matrix represents inclusion evidence:
 
 ### `make_m2()`
 
-**Purpose**: Creates the exclusion matrix (M2) from the M1 matrix and event data.
+**Purpose**: Creates the exclusion matrix (M2) from the M1 matrix and event data with intelligent memory management.
 
 **Function Signature**:
 ```r
-make_m2(m1_inclusion_matrix, eventdata)
+make_m2(m1_inclusion_matrix, eventdata, batch_size = 5000, 
+        memory_threshold = 2e9, force_fast = FALSE, 
+        multi_thread = FALSE, verbose = FALSE)
 ```
 
 **Parameters**:
 - `m1_inclusion_matrix`: Output from `make_m1()`
 - `eventdata`: Event metadata from `make_m1()`
+- `batch_size`: Number of groups to process per batch when using batched mode (default 5000)
+- `memory_threshold`: Maximum rows before switching to batched processing (default 2e9)
+- `force_fast`: Force fast processing regardless of memory estimates (default FALSE)
+- `multi_thread`: Enable parallel processing for batched operations (default FALSE)
+- `verbose`: Logical for detailed progress reporting (default FALSE)
 
 **The Exclusion Calculation Logic**:
 
@@ -429,12 +451,15 @@ print(top_events)
 
 **Function Signature**:
 ```r
-find_variable_genes(gene_expression_matrix, method = "vst", ...)
+find_variable_genes(gene_expression_matrix, method = "vst", 
+                   n_threads = 1, verbose = TRUE, ...)
 ```
 
 **Parameters**:
 - `gene_expression_matrix`: Sparse gene expression matrix
 - `method`: Either "vst" (variance stabilizing transformation) or "sum_deviance"
+- `n_threads`: Number of threads for parallel processing (only for sum_deviance method)
+- `verbose`: Logical for progress reporting (default TRUE)
 
 **Method Comparison**:
 
@@ -477,12 +502,13 @@ length(intersect(hvg_vst[1:500]$events, hvg_dev[1:500]$events))
 **Function Signature**:
 ```r
 get_pseudo_correlation(ZDB_matrix, m1_inclusion, m2_exclusion, 
-                      suppress_warnings = TRUE)
+                      metric = "CoxSnell", suppress_warnings = TRUE)
 ```
 
 **Parameters**:
-- `ZDB_matrix`: External data matrix (e.g., gene expression, protein levels)
-- `m1_inclusion`, `m2_exclusion`: Dense matrices (converted from sparse)
+- `ZDB_matrix`: External data matrix (e.g., gene expression, protein levels) - must be dense
+- `m1_inclusion`, `m2_exclusion`: Can be either sparse or dense matrices
+- `metric`: R² metric to use - "CoxSnell" (default) or "Nagelkerke"
 - `suppress_warnings`: Whether to suppress computational warnings
 
 **Use Cases**:

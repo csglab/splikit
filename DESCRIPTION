@@ -1,6 +1,6 @@
 Package: splikit
 Title: A toolkit for analysing RNA splicing in scRNA-seq data
-Version: 1.0.4
+Version: 1.0.5
 Authors@R: 
     person("Arsham", "Mikaeili Namini", , "arsham.mikaeilinamini@mail.mcgill.ca", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-9453-6951"))
@@ -10,6 +10,8 @@ Description:
   derived from single-cell RNA sequencing experiments. The package avoids the need for bulky 
   S4 objects by offering direct and efficient manipulation of matrices. Core functionalities 
   are implemented in C++ via Rcpp to ensure high performance and scalability on large datasets.
+URL: https://arshammik.github.io/splikit/, https://github.com/Arshammik/splikit
+BugReports: https://github.com/Arshammik/splikit/issues
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
