@@ -1,3 +1,12 @@
+---
+title: "STARsolo Processing Guide for Splicing Analysis"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{STARsolo Processing Guide for Splicing Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
 # Splicing-Pipeline
 
 ## **1. Mapping using STARsolo**

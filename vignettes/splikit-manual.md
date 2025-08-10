@@ -1,3 +1,12 @@
+---
+title: "Splikit Manual for Single-Cell Splicing Analysis"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Splikit Manual for Single-Cell Splicing Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
 # Splikit Manual for Single-Cell Splicing Analysis
 
 ## Table of Contents

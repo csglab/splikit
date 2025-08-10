@@ -10,6 +10,8 @@ Description:
   derived from single-cell RNA sequencing experiments. The package avoids the need for bulky 
   S4 objects by offering direct and efficient manipulation of matrices. Core functionalities 
   are implemented in C++ via Rcpp to ensure high performance and scalability on large datasets.
+URL: https://arshammik.github.io/splikit/, https://github.com/Arshammik/splikit
+BugReports: https://github.com/Arshammik/splikit/issues
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

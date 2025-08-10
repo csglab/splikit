@@ -1,5 +1,8 @@
 url: https://arshammik.github.io/splikit/
 
+template:
+  bootstrap: 5
+
 navbar:
   structure:
     left:  [intro, reference, articles, tutorials]
@@ -47,8 +50,8 @@ articles:
 - title: "Getting Started"
   navbar: ~
   contents:
-  - splikit-manual
-  - STARsolo-guide
+  - "splikit-manual"
+  - "STARsolo-guide"
 
 development:
   mode: auto
