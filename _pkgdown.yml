@@ -1,8 +1,11 @@
 url: https://arshammik.github.io/splikit/
+
 template:
   bootstrap: 5
-
+  
 home:
+  title: splikit
+  description: A toolkit for analyzing RNA splicing in single-cell data
   links:
   - text: Report a bug
     href: https://github.com/Arshammik/splikit/issues
