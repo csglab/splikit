@@ -2,49 +2,45 @@ url: https://arshammik.github.io/splikit/
 
 template:
   bootstrap: 5
-
-navbar:
-  structure:
-    left:  [intro, reference, articles, tutorials]
-    right: [search, github]
-  components:
-    github:
-      icon: fab fa-github fa-lg
-      href: https://github.com/Arshammik/splikit
-      
-home:
-  title: "splikit"
-  description: "A toolkit for analyzing single-cell RNA splicing data"
   
+home:
+  title: splikit
+  description: A toolkit for analyzing RNA splicing in single-cell data
+  links:
+  - text: Report a bug
+    href: https://github.com/Arshammik/splikit/issues
+
 reference:
-- title: "Data Processing"
-  desc: "Functions for processing STARsolo and gene expression data"
+- title: Data Processing
+  desc: Functions for processing STARsolo and gene expression data
   contents:
   - make_junction_ab
   - make_m1
   - make_m2
   - make_gene_count
   - make_velo_count
-  
-- title: "Feature Selection"
-  desc: "Functions for identifying highly variable features"
+
+- title: Feature Selection
+  desc: Functions for identifying highly variable features
   contents:
   - find_variable_events
   - find_variable_genes
-  
-- title: "Statistical Analysis"
-  desc: "Functions for statistical analysis and correlation"
+
+- title: Statistical Analysis
+  desc: Functions for statistical analysis and correlation
   contents:
   - get_pseudo_correlation
   - get_rowVar
   - get_silhouette_mean
-  
-- title: "Utility Functions"
-  desc: "Helper functions and data loading"
+
+- title: Utility Functions
+  desc: Helper functions and data loading
   contents:
   - load_toy_SJ_object
   - load_toy_M1_M2_object
   - make_eventdata_plus
 
-development:
-  mode: auto
+navbar:
+  structure:
+    left: [intro, reference]
+    right: [search, github]
