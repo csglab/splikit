@@ -627,13 +627,13 @@ make_m2 <- function(m1_inclusion_matrix, eventdata, batch_size = 5000,
   if (!is.logical(force_fast) || length(force_fast) != 1) {
     stop("Error: 'force_fast' must be a logical value (TRUE or FALSE).", call. = FALSE)
   }
-  if (!is.logical(multithread) || length(multithread) != 1) {
-    stop("Error: 'multithread' must be a logical value (TRUE or FALSE).", call. = FALSE)
+  if (!is.logical(multi_thread) || length(multi_thread) != 1) {
+    stop("Error: 'multi_thread' must be a logical value (TRUE or FALSE).", call. = FALSE)
   }
 
-  # Check for parallel package if multithread is requested
-  if (multithread && !requireNamespace("parallel", quietly = TRUE)) {
-    stop("Error: 'parallel' package is required for multithread=TRUE but is not installed.", call. = FALSE)
+  # Check for parallel package if multi_thread is requested
+  if (multi_thread && !requireNamespace("parallel", quietly = TRUE)) {
+    stop("Error: 'parallel' package is required for multi_thread=TRUE but is not installed.", call. = FALSE)
   }
 
   cat("Starting M2 matrix creation...\n")
@@ -745,7 +745,7 @@ make_m2 <- function(m1_inclusion_matrix, eventdata, batch_size = 5000,
 
     # Call the batched processing function
     result <- .make_m2_batched(m1_inclusion_matrix, group_ids, batch_size,
-                               unique_groups, multithread, verbose)
+                               unique_groups, multi_thread, verbose)
   } else {
     if (force_fast) {
       cat("|   |-- Using fast processing approach (forced by user)\n")
@@ -825,7 +825,7 @@ make_m2 <- function(m1_inclusion_matrix, eventdata, batch_size = 5000,
 #' Implements the batched triplet combination approach for memory-efficient processing.
 #' Processes groups in batches using lapply/mclapply and combines results efficiently.
 .make_m2_batched <- function(m1_inclusion_matrix, group_ids, batch_size,
-                             unique_groups, multithread, verbose) {
+                             unique_groups, multi_thread, verbose) {
 
   cat("+-- Step 3 | Creating M2 (batched processing approach)\n")
 
@@ -835,7 +835,7 @@ make_m2 <- function(m1_inclusion_matrix, eventdata, batch_size = 5000,
 
   cat("|   |-- Processing ", n_groups, " groups in ", n_batches, " batches\n")
 
-  if (multithread) {
+  if (multi_thread) {
     cat("|   |-- Using parallel processing with mclapply\n")
   } else {
     cat("|   |-- Using sequential processing with lapply\n")
@@ -900,7 +900,7 @@ make_m2 <- function(m1_inclusion_matrix, eventdata, batch_size = 5000,
 
   # Process all batches using lapply or mclapply
   batch_triplets <- tryCatch({
-    if (multithread) {
+    if (multi_thread) {
       parallel::mclapply(1:n_batches, process_batch, mc.cores = parallel::detectCores())
     } else {
       lapply(1:n_batches, process_batch)
