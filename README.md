@@ -1,9 +1,10 @@
 <img src="man/figures/logo.png" align="right" height="240"/>
 
-**Splikit** /ˈsplaɪ.kɪt/ is a toolkit designed for analyzing high-dimensional single-cell splicing data. It provides a framework for extracting and working with ratio-based data structures derived from single-cell RNA sequencing experiments. The package avoids the need for bulky S4 objects by offering direct and efficient manipulation of matrices. Core functionalities are implemented in C++ via Rcpp to ensure high performance and scalability on large datasets.
+
+**Splikit** /ˈsplaɪ.kɪt/ is a comprehensive R toolkit for analyzing alternative splicing in single-cell RNA sequencing (scRNA-seq) data. It offers a streamlined workflow for transforming raw junction abundance data from tools such as STARsolo into actionable insights—detecting differential splicing events and enabling rich downstream analyses. Designed for both power and ease of use, Splikit integrates high-performance C++ implementations and memory-efficient data structures to handle large datasets, all through a clean and intuitive R interface.
 
 [![R-CMD-check](https://github.com/Arshammik/splikit/actions/workflows/R-CMD-check.yml/badge.svg)](https://github.com/Arshammik/splikit/actions/workflows/R-CMD-check.yml)
-[![Documentation](https://img.shields.io/badge/Docs-Learn%20More-blue.svg)](./vignettes/splikit_manual.Rmd)
+[![Documentation](https://img.shields.io/badge/Docs-Learn%20More-blue.svg)](https://arshammik.github.io/splikit/)
 
 ## **Requirments**
 
@@ -11,20 +12,51 @@
 -   R libraries: [Rcpp](https://cran.r-project.org/web/packages/Rcpp/index.html), [RcppArmadillo](https://cran.r-project.org/web/packages/RcppArmadillo/index.html), [Matrix](https://cran.r-project.org/web/packages/Matrix/index.html), [data.table](https://cran.r-project.org/web/packages/data.table/index.html)
 
 
-## **Installation**
-To install the latest version of splikit from GitHub:
+## Installation
+
+To install the latest version of `splikit` from GitHub:
+
 ```r
 # Install devtools if you haven't already
 install.packages("devtools")
 
 # Install splikit
-devtools::install_github("Arshammik/splikit")
+devtools::install_github("csglab/splikit")
 ```
-## **Documentation**
-Comprehensive documentation is available at:
-1. [Full Manual](./vignettes/splikit_manual.Rmd)
-2. [STARsolo Processing Guide](./vignettes/STARsolo_guide.Rmd)
-3. [Package Website](https://arshammik.github.io/splikit/) (after GitHub Pages deployment)
+## Usage
 
-## **Issues**
-If you encounter any issues or have suggestions, please [open an issue](https://github.com/Arshammik/splikit/issues/new).
+```r
+# Create m1 matrix from a junction abundance object
+junction_abundance_object <- load_toy_SJ_object()
+m1_object <- make_m1(
+  junction_abundance_object,
+  min_counts = 1,
+  verbose = FALSE
+)
+
+# Create m2 matrix from the m1 inclusion matrix
+m2_matrix <- make_m2(
+  m1_inclusion_matrix = m1_object$m1_inclusion_matrix,
+  eventdata = m1_object$eventdata
+)
+
+# Perform feature selection for splicing joint measurements
+m1_matrix <- m1_object$m1_inclusion_matrix
+HVE_Info <- find_variable_events(m1_matrix, m2_matrix, n_threads = 32)
+
+```
+
+
+## Documentation
+
+Full guides, examples, and tutorials are available at the [Splikit webpage](https://arshammik.github.io/splikit/)
+
+## License
+
+This project is licensed under the MIT License – see the `LICENSE.md` file for details.
+
+## Acknowledgment
+
+The author is aware of the package’s limitations and potential breakpoints. It was developed under limited knowledge, time, and resources, and is provided with the hope that it will be useful. Feedback and contributions from the community are warmly welcomed. If you encounter any issues or have suggestions, please [open an issue](https://github.com/Arshammik/splikit/issues/new).
+
+
