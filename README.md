@@ -3,8 +3,8 @@
 
 **Splikit** /ˈsplaɪ.kɪt/ is a comprehensive R toolkit for analyzing alternative splicing in single-cell RNA sequencing (scRNA-seq) data. It offers a streamlined workflow for transforming raw junction abundance data from tools such as STARsolo into actionable insights—detecting differential splicing events and enabling rich downstream analyses. Designed for both power and ease of use, Splikit integrates high-performance C++ implementations and memory-efficient data structures to handle large datasets, all through a clean and intuitive R interface.
 
-[![R-CMD-check](https://github.com/Arshammik/splikit/actions/workflows/R-CMD-check.yml/badge.svg)](https://github.com/Arshammik/splikit/actions/workflows/R-CMD-check.yml)
-[![Documentation](https://img.shields.io/badge/Docs-Learn%20More-blue.svg)](https://arshammik.github.io/splikit/)
+[![R-CMD-check](https://github.com/csglab/splikit/actions/workflows/R-CMD-check.yml/badge.svg)](https://github.com/csglab/splikit/actions/workflows/R-CMD-check.yml)
+[![Documentation](https://img.shields.io/badge/Docs-Learn%20More-blue.svg)](https://csglab.github.io/splikit/)
 
 ## **Requirments**
 
@@ -49,7 +49,7 @@ HVE_Info <- find_variable_events(m1_matrix, m2_matrix, n_threads = 32)
 
 ## Documentation
 
-Full guides, examples, and tutorials are available at the [Splikit webpage](https://arshammik.github.io/splikit/)
+Full guides, examples, and tutorials are available at the [Splikit webpage](https://csglab.github.io/splikit/)
 
 ## License
 
@@ -57,6 +57,6 @@ This project is licensed under the MIT License – see the `LICENSE.md` file for
 
 ## Acknowledgment
 
-The author is aware of the package’s limitations and potential breakpoints. It was developed under limited knowledge, time, and resources, and is provided with the hope that it will be useful. Feedback and contributions from the community are warmly welcomed. If you encounter any issues or have suggestions, please [open an issue](https://github.com/Arshammik/splikit/issues/new).
+The author is aware of the package’s limitations and potential breakpoints. It was developed under limited knowledge, time, and resources, and is provided with the hope that it will be useful. Feedback and contributions from the community are warmly welcomed. If you encounter any issues or have suggestions, please [open an issue](https://github.com/csglab/splikit/issues/new).
 
 
