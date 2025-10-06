@@ -86,9 +86,6 @@ library(splikit)
 ### Verify Installation
 
 ```r
-# Check if OpenMP is available for parallel processing
-check_openmp_enabled()
-
 # Load example data to test functionality
 toy_data <- load_toy_SJ_object()
 print(names(toy_data))
