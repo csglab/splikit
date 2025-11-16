@@ -72,7 +72,6 @@ find_variable_events <- function(m1_matrix, m2_matrix, min_row_sum = 50, n_threa
   sum_deviances <- Reduce(`+`, deviance_results)
   rez <- data.table::data.table(events = names(sum_deviances), sum_deviance = as.numeric(sum_deviances))
   return(rez)
-  cat("All Done!\n")
 }
 
 #' Find Variable Genes Using Variance or Deviance-Based Metrics
@@ -118,7 +117,7 @@ find_variable_events <- function(m1_matrix, m2_matrix, min_row_sum = 50, n_threa
 #' @importClassesFrom Matrix dgCMatrix dsCMatrix dgTMatrix dsTMatrix
 #' @export
 find_variable_genes <- function(gene_expression_matrix, method = "vst", n_threads = 1, verbose = TRUE, ...) {
-  # addinng the vst method as the deafult
+  # adding the vst method as the default
   method <- match.arg(method, choices = c("vst", "sum_deviance"))
 
   # Verify that gene_expression_matrix is a sparse Matrix
@@ -168,7 +167,7 @@ find_variable_genes <- function(gene_expression_matrix, method = "vst", n_thread
       deviances_list <- vector("list", length(libraries))
       names(deviances_list) <- libraries
 
-      # Getting the sim devinaces fir NB model
+      # Getting the sum deviances for NB model
       deviances_list <- lapply(libraries, function(lib) {
         filter <- which(meta[, ID] == lib)
         gene_expression_matrix_sub <- gene_expression_matrix[, filter, drop = FALSE]
