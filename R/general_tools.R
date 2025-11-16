@@ -56,27 +56,36 @@ NULL
 #' print(pseudo_r_square_nagel)
 #'
 #' @export
-get_pseudo_correlation <- function(ZDB_matrix, m1_inclusion, m2_exclusion, metric = "CoxSnell", suppress_warnings=TRUE) {
+get_pseudo_correlation <- function(ZDB_matrix, m1_inclusion, m2_exclusion, metric = "CoxSnell", suppress_warnings=FALSE) {
 
   # Validate metric parameter
   metric <- match.arg(metric, choices = c("CoxSnell", "Nagelkerke"))
-  
+
   # Check ZDB_matrix (must be dense)
-  if (!is.matrix(ZDB_matrix)) stop("ZDB_matrix must be a dense matrix.")
-  
+  if (!is.matrix(ZDB_matrix)) stop("ZDB_matrix must be a dense matrix.", call. = FALSE)
+
   # Check m1 and m2 (can be sparse or dense)
   if (!is.matrix(m1_inclusion) && !inherits(m1_inclusion, "Matrix")) {
-    stop("m1_inclusion must be either a dense matrix or a sparse Matrix.")
+    stop("m1_inclusion must be either a dense matrix or a sparse Matrix.", call. = FALSE)
   }
   if (!is.matrix(m2_exclusion) && !inherits(m2_exclusion, "Matrix")) {
-    stop("m2_exclusion must be either a dense matrix or a sparse Matrix.")
+    stop("m2_exclusion must be either a dense matrix or a sparse Matrix.", call. = FALSE)
   }
 
+  # Check row dimensions
   if (nrow(m1_inclusion) != nrow(ZDB_matrix)) {
-    stop("m1_inclusion must have the same number of rows as ZDB_matrix.")
+    stop("m1_inclusion must have the same number of rows as ZDB_matrix.", call. = FALSE)
   }
   if (nrow(m2_exclusion) != nrow(ZDB_matrix)) {
-    stop("m2_exclusion must have the same number of rows as ZDB_matrix.")
+    stop("m2_exclusion must have the same number of rows as ZDB_matrix.", call. = FALSE)
+  }
+
+  # Check column dimensions
+  if (ncol(m1_inclusion) != ncol(ZDB_matrix)) {
+    stop("m1_inclusion must have the same number of columns as ZDB_matrix.", call. = FALSE)
+  }
+  if (ncol(m2_exclusion) != ncol(ZDB_matrix)) {
+    stop("m2_exclusion must have the same number of columns as ZDB_matrix.", call. = FALSE)
   }
 
   cat("Input dimension check passed. Proceeding with computation.\n")
@@ -151,7 +160,17 @@ get_pseudo_correlation <- function(ZDB_matrix, m1_inclusion, m2_exclusion, metri
     })
   }
 
+  # Warn about NA removal
+  n_before <- nrow(results)
   results <- na.omit(results)
+  n_after <- nrow(results)
+
+  if (n_before > n_after) {
+    n_removed <- n_before - n_after
+    message("Removed ", n_removed, " event(s) with NA values (",
+            round(100 * n_removed / n_before, 1), "% of total).")
+    message("Reasons for NA: insufficient data (n<2), no variation, or convergence failure.")
+  }
 
   cat("Computation completed successfully.\n")
   return(results)
@@ -185,7 +204,7 @@ get_pseudo_correlation <- function(ZDB_matrix, m1_inclusion, m2_exclusion, metri
 #' @export
 get_rowVar <- function(M, verbose=FALSE) {
   if (! (is.matrix(M) || inherits(M, "dgCMatrix")) ) {
-    stop("`M` must be either a dense numeric matrix or a dgCMatrix.")
+    stop("`M` must be either a dense numeric matrix or a dgCMatrix.", call. = FALSE)
   }
   if(verbose) message("[get_rowVar] Starting computation")
   result <- rowVariance_cpp(M)

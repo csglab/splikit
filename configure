@@ -1,9 +1,23 @@
 #!/bin/bash
 
-if [ "$(uname)" = "Darwin" ]; then
-    cp -f src/Makevars.mac src/Makevars
-else
-    cp -f src/Makevars.linux src/Makevars
-fi
+# Detect operating system and copy appropriate Makevars file
+# Note: Windows typically uses src/Makevars.win directly, but we handle it here for completeness
+
+OS_TYPE="$(uname -s)"
+
+case "${OS_TYPE}" in
+    Darwin*)
+        # macOS
+        cp -f src/Makevars.mac src/Makevars
+        ;;
+    MINGW*|MSYS*|CYGWIN*)
+        # Windows (Git Bash, MSYS2, Cygwin)
+        cp -f src/Makevars.win src/Makevars
+        ;;
+    *)
+        # Linux and other Unix-like systems
+        cp -f src/Makevars.linux src/Makevars
+        ;;
+esac
 
 exit 0

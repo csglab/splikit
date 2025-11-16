@@ -3,30 +3,54 @@ using namespace Rcpp;
 
 // [[Rcpp::export]]
 NumericVector rowVariance_cpp(SEXP mat) {
-  Rcout << "[rowVariance_cpp] Entering function\n";
+  try {
+    Rcout << "[rowVariance_cpp] Entering function\n";
 
-  // Dense matrix path
-  if (Rf_isMatrix(mat) && TYPEOF(mat) == REALSXP) {
-    NumericMatrix M(mat);
-    int nrow = M.nrow(), ncol = M.ncol();
-    Rcout << "[rowVariance_cpp] Detected dense matrix: "
-          << nrow << "×" << ncol << "\n";
+    // Dense numeric matrix path (double)
+    if (Rf_isMatrix(mat) && TYPEOF(mat) == REALSXP) {
+      NumericMatrix M(mat);
+      int nrow = M.nrow(), ncol = M.ncol();
+      Rcout << "[rowVariance_cpp] Detected dense numeric matrix: "
+            << nrow << "×" << ncol << "\n";
 
-    NumericVector out(nrow);
-    for (int i = 0; i < nrow; ++i) {
-      double sum = 0.0, sum2 = 0.0;
-      for (int j = 0; j < ncol; ++j) {
-        double v = M(i, j);
-        sum  += v;
-        sum2 += v * v;
+      NumericVector out(nrow);
+      for (int i = 0; i < nrow; ++i) {
+        double sum = 0.0, sum2 = 0.0;
+        for (int j = 0; j < ncol; ++j) {
+          double v = M(i, j);
+          sum  += v;
+          sum2 += v * v;
+        }
+        double mean = sum / ncol;
+        out[i] = sum2 / ncol - mean * mean;
       }
-      double mean = sum / ncol;
-      out[i] = sum2 / ncol - mean * mean;
+
+      Rcout << "[rowVariance_cpp] Dense computation complete\n";
+      return out;
     }
 
-    Rcout << "[rowVariance_cpp] Dense computation complete\n";
-    return out;
-  }
+    // Dense integer matrix path
+    if (Rf_isMatrix(mat) && TYPEOF(mat) == INTSXP) {
+      IntegerMatrix M(mat);
+      int nrow = M.nrow(), ncol = M.ncol();
+      Rcout << "[rowVariance_cpp] Detected dense integer matrix: "
+            << nrow << "×" << ncol << " (converting to numeric)\n";
+
+      NumericVector out(nrow);
+      for (int i = 0; i < nrow; ++i) {
+        double sum = 0.0, sum2 = 0.0;
+        for (int j = 0; j < ncol; ++j) {
+          double v = static_cast<double>(M(i, j));
+          sum  += v;
+          sum2 += v * v;
+        }
+        double mean = sum / ncol;
+        out[i] = sum2 / ncol - mean * mean;
+      }
+
+      Rcout << "[rowVariance_cpp] Dense integer computation complete\n";
+      return out;
+    }
 
   // Sparse matrix path (dgCMatrix)
   if (Rf_isS4(mat) && Rf_inherits(mat, "dgCMatrix")) {
@@ -62,7 +86,14 @@ NumericVector rowVariance_cpp(SEXP mat) {
     return out;
   }
 
-  // Unsupported type
-  stop("`mat` must be a numeric matrix or a dgCMatrix.");
+    // Unsupported type
+    stop("`mat` must be a numeric/integer matrix or a dgCMatrix.");
+    return NumericVector(0); // never reached
+
+  } catch(std::exception &ex) {
+    forward_exception_to_r(ex);
+  } catch(...) {
+    ::Rf_error("C++ exception (unknown reason)");
+  }
   return NumericVector(0); // never reached
 }

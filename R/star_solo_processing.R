@@ -982,15 +982,27 @@ make_m2 <- function(m1_inclusion_matrix, eventdata, batch_size = 5000,
 #' @export
 make_eventdata_plus <- function(eventdata, GTF_file_direction) {
 
+  # Validate GTF file path
+  if (!file.exists(GTF_file_direction)) {
+    stop("GTF file not found: ", GTF_file_direction, call. = FALSE)
+  }
+  if (!file.access(GTF_file_direction, mode = 4) == 0) {
+    stop("GTF file is not readable: ", GTF_file_direction, call. = FALSE)
+  }
+
   # Read GTF file as plain text using fread
-  GTF <- data.table::fread(
-    GTF_file_direction,
-    col.names = c("seqid", "source", "type", "start", "end", "score", "strand", "phase", "attribute"),
-    sep = "\t",
-    header = FALSE,
-    quote = "",
-    showProgress = FALSE
-  )
+  GTF <- tryCatch({
+    data.table::fread(
+      GTF_file_direction,
+      col.names = c("seqid", "source", "type", "start", "end", "score", "strand", "phase", "attribute"),
+      sep = "\t",
+      header = FALSE,
+      quote = "",
+      showProgress = FALSE
+    )
+  }, error = function(e) {
+    stop("Error reading GTF file: ", e$message, call. = FALSE)
+  })
 
   # Filter for 'gene' entries
   ref_gtf <- GTF[type == "gene"]

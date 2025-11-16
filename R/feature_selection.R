@@ -19,22 +19,31 @@
 #'  # printing the results
 #'  print(HVE[order(-sum_deviance)])
 #' @export
-find_variable_events <- function(m1_matrix, m2_matrix, min_row_sum = 50, n_threads=1, verbose=TRUE, ...) {
+find_variable_events <- function(m1_matrix, m2_matrix, min_row_sum = 50, n_threads=1, verbose=FALSE, ...) {
 
   # Check if matrices are sparse
   if (!(inherits(m1_matrix, "Matrix") && inherits(m2_matrix, "Matrix"))) {
-    stop("Both 'm1_matrix' and 'm2_matrix' must be sparse matrices of class 'Matrix'.")
+    stop("Both 'm1_matrix' and 'm2_matrix' must be sparse matrices of class 'Matrix'.", call. = FALSE)
   }
   # Check matrix compatibility
   if (!identical(colnames(m1_matrix), colnames(m2_matrix))) {
-    stop("The colnames (barcodes) of inclusion and exclusion matrices are not identical.")
+    stop("The colnames (barcodes) of inclusion and exclusion matrices are not identical.", call. = FALSE)
   }
   if (!identical(rownames(m1_matrix), rownames(m2_matrix))) {
-    stop("The rownames (junction events) of inclusion and exclusion matrices are not identical.")
+    stop("The rownames (junction events) of inclusion and exclusion matrices are not identical.", call. = FALSE)
   }
 
   # Filter rows based on minimum row sum criteria
-  to_keep_events <- which(rowSums(m1_matrix) > min_row_sum & rowSums(m2_matrix) > min_row_sum)
+  m1_sums <- rowSums(m1_matrix)
+  m2_sums <- rowSums(m2_matrix)
+  to_keep_events <- which(m1_sums > min_row_sum & m2_sums > min_row_sum)
+
+  # Check if any events pass the threshold
+  if (length(to_keep_events) == 0) {
+    stop("No events pass the min_row_sum threshold of ", min_row_sum,
+         ". Consider lowering the threshold or checking your data.", call. = FALSE)
+  }
+
   m1_matrix <- m1_matrix[to_keep_events, , drop = FALSE]
   m2_matrix <- m2_matrix[to_keep_events, , drop = FALSE]
 
@@ -58,7 +67,7 @@ find_variable_events <- function(m1_matrix, m2_matrix, min_row_sum = 50, n_threa
     deviance_values <- tryCatch({
       calcDeviances_ratio(M1_sub, M2_sub, n_threads)
     }, error = function(e) {
-      stop("Error in calcDeviances_ratio function: ", e$message)
+      stop("Error in calcDeviances_ratio function: ", e$message, call. = FALSE)
     })
     deviance_values <- c(deviance_values)
     names(deviance_values) <- rownames(M1_sub)
@@ -116,24 +125,24 @@ find_variable_events <- function(m1_matrix, m2_matrix, min_row_sum = 50, n_threa
 #' @import Matrix
 #' @importClassesFrom Matrix dgCMatrix dsCMatrix dgTMatrix dsTMatrix
 #' @export
-find_variable_genes <- function(gene_expression_matrix, method = "vst", n_threads = 1, verbose = TRUE, ...) {
+find_variable_genes <- function(gene_expression_matrix, method = "vst", n_threads = 1, verbose = FALSE, ...) {
   # adding the vst method as the default
   method <- match.arg(method, choices = c("vst", "sum_deviance"))
 
   # Verify that gene_expression_matrix is a sparse Matrix
   if (!inherits(gene_expression_matrix, "Matrix")) {
-    stop("The 'gene_expression_matrix' must be a sparse matrix of class 'Matrix'.")
+    stop("The 'gene_expression_matrix' must be a sparse matrix of class 'Matrix'.", call. = FALSE)
   }
 
   if (method == "vst") {
     if(verbose) cat("The method we are using is vst (Seurat)...\n")
     if (!exists("standardizeSparse_variance_vst")) {
-      stop("The function 'standardizeSparse_variance_vst' is not available. Check your C++ source files.")
+      stop("The function 'standardizeSparse_variance_vst' is not available. Check your C++ source files.", call. = FALSE)
     }
     rez_vector <- tryCatch({
       standardizeSparse_variance_vst(matSEXP = gene_expression_matrix)
     }, error = function(e) {
-      stop("Error in standardizeSparse_variance_vst: ", e$message)
+      stop("Error in standardizeSparse_variance_vst: ", e$message, call. = FALSE)
     })
     rez <- data.table::data.table(events = rownames(gene_expression_matrix),
                                   standardize_variance = rez_vector)
@@ -143,7 +152,7 @@ find_variable_genes <- function(gene_expression_matrix, method = "vst", n_thread
     # Filter rows based on minimum row sum criteria
     to_keep_features <- which(rowSums(gene_expression_matrix) > 0)
     if (length(to_keep_features) == 0) {
-      stop("No genes with a positive row sum were found.")
+      stop("No genes with a positive row sum were found.", call. = FALSE)
     }
     gene_expression_matrix <- gene_expression_matrix[to_keep_features, , drop = FALSE]
 
@@ -174,7 +183,7 @@ find_variable_genes <- function(gene_expression_matrix, method = "vst", n_thread
         deviance_values <- tryCatch({
           calcNBDeviancesWithThetaEstimation(as(gene_expression_matrix_sub, "dgCMatrix"), n_threads)
         }, error = function(e) {
-          stop("Error in calcNBDeviancesWithThetaEstimation function: ", e$message)
+          stop("Error in calcNBDeviancesWithThetaEstimation function: ", e$message, call. = FALSE)
         })
         deviance_values <- c(deviance_values)
         names(deviance_values) <- rownames(gene_expression_matrix_sub)
@@ -197,7 +206,7 @@ find_variable_genes <- function(gene_expression_matrix, method = "vst", n_thread
     row_var <- tryCatch({
       splikit::get_rowVar(M = gene_expression_matrix)
     }, error = function(e) {
-      stop("Error in splikit::get_rowVar: ", e$message)
+      stop("Error in splikit::get_rowVar: ", e$message, call. = FALSE)
     })
 
     row_var_cpp_dt <- data.table::data.table(events = rownames(gene_expression_matrix),
