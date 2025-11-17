@@ -13,8 +13,8 @@ NULL
 #' @param m1_inclusion A numeric matrix (dense or sparse) of the same number of rows as `ZDB_matrix`, representing inclusion features.
 #' @param m2_exclusion A numeric matrix (dense or sparse) of the same number of rows as `ZDB_matrix`, representing exclusion features.
 #' @param metric Character string specifying which R² metric to compute. Options are "CoxSnell" (default) or "Nagelkerke".
-#' @param suppress_warnings Logical. If \code{TRUE} (default), suppresses warnings during any warnings triggered during
-#' computation (e.g., due to ill-conditioned inputs)
+#' @param suppress_warnings Logical. If \code{TRUE}, suppresses warnings during computation
+#'   (e.g., due to ill-conditioned inputs). Defaults to \code{FALSE}.
 #'
 #' @return A `data.table` with the following columns:
 #' \describe{
@@ -228,7 +228,7 @@ get_rowVar <- function(M, verbose=FALSE) {
 #' # Preparing the inputs
 #' set.seed(42)
 #' pc_matrix <- matrix(data = rnorm(n = 10000 * 15, sd = 2), nrow = 10000, ncol = 15)
-#' cluster_numbers <- runif(n = 10000, min = 1, max = 10) |> as.integer()
+#' cluster_numbers <- as.integer(runif(n = 10000, min = 1, max = 10))
 #'
 #' # Getting the mean silhouette score
 #' n_threads <- parallel::detectCores()

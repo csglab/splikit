@@ -772,7 +772,7 @@ make_m2 <- function(m1_inclusion_matrix, eventdata, batch_size = 5000,
 
   tryCatch({
     # Convert m1_inclusion_matrix to data.table
-    m1 <- summary(m1_inclusion_matrix) |> data.table::as.data.table()
+    m1 <- data.table::as.data.table(summary(m1_inclusion_matrix))
     data.table::setnames(m1, "x", "x_1")
 
     if (verbose) cat("|   |-- Converted matrix to data.table format\n")
@@ -780,7 +780,7 @@ make_m2 <- function(m1_inclusion_matrix, eventdata, batch_size = 5000,
     # Merge group information
     m1 <- merge(m1, group_ids, by = "i")
     m1[, x_tot := sum(x_1), .(group_id, j)]
-    m_tot <- m1[, .(group_id, j, x_tot)] |> unique()
+    m_tot <- unique(m1[, .(group_id, j, x_tot)])
 
     if (verbose) cat("|   |-- Calculated group totals\n")
 
@@ -847,7 +847,7 @@ make_m2 <- function(m1_inclusion_matrix, eventdata, batch_size = 5000,
 
   # Convert m1_inclusion_matrix to data.table for merging (once, outside the apply)
   tryCatch({
-    m1 <- summary(m1_inclusion_matrix) |> data.table::as.data.table()
+    m1 <- data.table::as.data.table(summary(m1_inclusion_matrix))
     data.table::setnames(m1, "x", "x_1")
     m1 <- merge(m1, group_ids, by = "i")
 

@@ -4,7 +4,7 @@
 #' @param m2_matrix A matrix representing the exclusion matrix. Rows are events, columns are barcodes.
 #' @param n_threads If the module OpenPM is available for your device, the function suggests using multi-thread processing for even faster computation.
 #' @param min_row_sum A numeric value specifying the minimum row sum threshold for filtering events. Defaults to 50.
-#' @param verbose Logical. If \code{TRUE} (default), prints progress and informational messages.
+#' @param verbose Logical. If \code{TRUE}, prints progress and informational messages. Defaults to \code{FALSE}.
 #' @param ... Additional arguments to be passed.
 #'
 #' @return A \code{data.table} containing the events and their corresponding sum deviance values.
@@ -96,7 +96,7 @@ find_variable_events <- function(m1_matrix, m2_matrix, min_row_sum = 50, n_threa
 #'   \code{"vst"} uses a variance-stabilizing transformation to identify variable genes.
 #'   \code{"sum_deviance"} computes per-library deviances and combines them with a row variance metric.
 #' @param n_threads If OpenMP is available for your device, the function suggests using multi-thread processing for even faster computation (only for sum_deviance method).
-#' @param verbose Logical. If \code{TRUE} (default), prints progress and informational messages.
+#' @param verbose Logical. If \code{TRUE}, prints progress and informational messages. Defaults to \code{FALSE}.
 #' @param ... Additional arguments (currently unused).
 #'
 #' @return A \code{data.table} containing gene names (column \code{events}) and computed metrics.
