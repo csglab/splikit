@@ -49,6 +49,13 @@ m1_inclusion <- m1_obj$m1_inclusion_matrix
 eventdata <- m1_obj$event_data
 m2_exclusion <- make_m2(m1_inclusion, eventdata)
 
+# filter events based on junction coverage
+index_to_keep <- which(rowSums(m1_inclusion) > 10)
+m1_inclusion <- m1_inclusion[index_to_keep, ]
+m2_exclusion <- m2_exclusion[index_to_keep, ]
+
+\donttest{
+
 # creating a dummy ZDB
 ZDB_matrix <- matrix(rnorm(n = (nrow(m1_inclusion) * ncol(m1_inclusion)), sd = 7),
 nrow = nrow(m1_inclusion),
@@ -62,12 +69,5 @@ m2_dense <- as.matrix(m2_exclusion)
 pseudo_r_square_cox <- get_pseudo_correlation(ZDB_matrix, m1_dense, m2_dense)
 print(pseudo_r_square_cox)
 
-# Example with sparse matrices (more memory efficient)
-pseudo_r_square_sparse <- get_pseudo_correlation(ZDB_matrix, m1_inclusion, m2_exclusion)
-
-# Example using Nagelkerke R² instead of Cox-Snell
-pseudo_r_square_nagel <- get_pseudo_correlation(ZDB_matrix, m1_inclusion, m2_exclusion, 
-                                                metric = "Nagelkerke")
-print(pseudo_r_square_nagel)
-
+    }
 }
