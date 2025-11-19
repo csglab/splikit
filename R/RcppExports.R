@@ -37,6 +37,38 @@ standardizeSparse_variance_vst <- function(matSEXP, display_progress = FALSE) {
     .Call(`_splikit_standardizeSparse_variance_vst`, matSEXP, display_progress)
 }
 
+#' Compute M2 exclusion matrix from M1 inclusion matrix (C++ implementation)
+#'
+#' For each event in a group, M2 = group_sum - M1.
+#' This is a fast C++ implementation with optional OpenMP parallelization.
+#'
+#' @param M1 Sparse matrix (dgCMatrix) of inclusion counts (events x cells)
+#' @param group_ids Integer vector of group IDs for each event (0-indexed internally)
+#' @param n_threads Number of threads for OpenMP (default 1)
+#'
+#' @return Sparse matrix M2 with same dimensions as M1
+#'
+#' @keywords internal
+make_m2_cpp <- function(M1, group_ids, n_threads = 1L) {
+    .Call(`_splikit_make_m2_cpp`, M1, group_ids, n_threads)
+}
+
+#' Faster M2 computation using parallel column processing
+#'
+#' This version processes columns in parallel, which is more efficient
+#' for the CSC sparse matrix format.
+#'
+#' @param M1 Sparse matrix (dgCMatrix) of inclusion counts (events x cells)
+#' @param group_ids Integer vector of group IDs for each event
+#' @param n_threads Number of threads for OpenMP (default 1)
+#'
+#' @return Sparse matrix M2 with same dimensions as M1
+#'
+#' @keywords internal
+make_m2_cpp_parallel <- function(M1, group_ids, n_threads = 1L) {
+    .Call(`_splikit_make_m2_cpp_parallel`, M1, group_ids, n_threads)
+}
+
 rowVariance_cpp <- function(mat) {
     .Call(`_splikit_rowVariance_cpp`, mat)
 }
