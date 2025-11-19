@@ -8,149 +8,15 @@
 using namespace Rcpp;
 using namespace arma;
 
-//' Compute M2 exclusion matrix from M1 inclusion matrix (C++ implementation)
+//' Memory-efficient M2 computation building CSC format directly
 //'
-//' For each event in a group, M2 = group_sum - M1.
-//' This is a fast C++ implementation with optional OpenMP parallelization.
+//' This version minimizes memory usage by:
+//' - Building CSC format directly (no triplet intermediate)
+//' - Using O(n_groups) workspace per column instead of dense group_sums matrix
+//' - Two-pass algorithm: count then fill
 //'
-//' @param M1 Sparse matrix (dgCMatrix) of inclusion counts (events x cells)
-//' @param group_ids Integer vector of group IDs for each event (0-indexed internally)
-//' @param n_threads Number of threads for OpenMP (default 1)
-//'
-//' @return Sparse matrix M2 with same dimensions as M1
-//'
-//' @keywords internal
-// [[Rcpp::export]]
-arma::sp_mat make_m2_cpp(const arma::sp_mat& M1,
-                          const IntegerVector& group_ids,
-                          int n_threads = 1) {
-
-  int n_events = M1.n_rows;
-  int n_cells = M1.n_cols;
-
-  // Validate inputs
-
-  if (group_ids.size() != n_events) {
-    stop("group_ids length must match number of rows in M1");
-  }
-
-  // Find number of unique groups
-
-  int max_group = 0;
-  for (int i = 0; i < n_events; i++) {
-    if (group_ids[i] > max_group) {
-      max_group = group_ids[i];
-    }
-  }
-  int n_groups = max_group + 1;
-
-#ifdef _OPENMP
-  if (n_threads > 1) {
-    omp_set_num_threads(n_threads);
-  }
-#endif
-
-  // Step 1: Pre-compute which events belong to each group
-  // group_members[g] = vector of event indices in group g
-  std::vector<std::vector<int>> group_members(n_groups);
-  for (int i = 0; i < n_events; i++) {
-    int g = group_ids[i];
-    group_members[g].push_back(i);
-  }
-
-  // Step 2: Compute group sums for each cell
-  // group_sums[g * n_cells + j] = sum of M1 for all events in group g, cell j
-  // Using dense matrix for group sums since we need random access
-  arma::mat group_sums(n_groups, n_cells, arma::fill::zeros);
-
-  // Iterate through sparse matrix to compute group sums
-  // Sparse matrices are stored in CSC format (column-major)
-  for (sp_mat::const_iterator it = M1.begin(); it != M1.end(); ++it) {
-    int row = it.row();
-    int col = it.col();
-    double val = *it;
-    int g = group_ids[row];
-    group_sums(g, col) += val;
-  }
-
-  // Step 3: Build M2 matrix
-  // For efficiency, we'll build triplets and construct sparse matrix
-  // M2[i, j] = group_sums[group_ids[i], j] - M1[i, j]
-
-  // Count non-zeros: M2 is non-zero where either:
-  // - M1 is non-zero, or
-  // - group_sum is non-zero and M1 is zero
-
-  // We'll use a different approach: iterate by groups
-  // For each group, for each cell, distribute the exclusion counts
-
-  std::vector<uword> row_indices;
-  std::vector<uword> col_indices;
-  std::vector<double> values;
-
-  // Reserve space (estimate based on M1 density * group expansion)
-  size_t estimated_nnz = M1.n_nonzero * 2;
-  row_indices.reserve(estimated_nnz);
-  col_indices.reserve(estimated_nnz);
-  values.reserve(estimated_nnz);
-
-  // Process each group
-  // Note: We process sequentially here to avoid thread-safety issues with vectors
-  // But the inner loops could be parallelized
-
-  for (int g = 0; g < n_groups; g++) {
-    const std::vector<int>& members = group_members[g];
-    int group_size = members.size();
-
-    if (group_size <= 1) {
-      // Single-member groups have M2 = 0 everywhere
-      continue;
-    }
-
-    // For each cell
-    for (int j = 0; j < n_cells; j++) {
-      double total = group_sums(g, j);
-
-      if (total == 0) {
-        // No counts in this group for this cell
-        continue;
-      }
-
-      // For each event in this group
-      for (int k = 0; k < group_size; k++) {
-        int i = members[k];
-        double m1_val = M1(i, j);
-        double m2_val = total - m1_val;
-
-        if (m2_val != 0) {
-          row_indices.push_back(i);
-          col_indices.push_back(j);
-          values.push_back(m2_val);
-        }
-      }
-    }
-  }
-
-  // Construct sparse matrix from triplets
-  arma::umat locations(2, values.size());
-  arma::vec vals(values.size());
-
-  for (size_t k = 0; k < values.size(); k++) {
-    locations(0, k) = row_indices[k];
-    locations(1, k) = col_indices[k];
-    vals(k) = values[k];
-  }
-
-  arma::sp_mat M2(locations, vals, n_events, n_cells);
-
-  return M2;
-}
-
-
-//' Faster M2 computation using parallel column processing
-//'
-//' This version processes columns in parallel, which is more efficient
-//' for the CSC sparse matrix format.
+//' Memory usage: O(nnz_output) + O(n_groups) workspace
+//' vs previous: O(n_groups * n_cells) + O(6 * nnz_output)
 //'
 //' @param M1 Sparse matrix (dgCMatrix) of inclusion counts (events x cells)
 //' @param group_ids Integer vector of group IDs for each event
@@ -188,33 +54,65 @@ arma::sp_mat make_m2_cpp_parallel(const arma::sp_mat& M1,
 #endif
 
   // Pre-compute group members
+  // group_members[g] = vector of event indices in group g
   std::vector<std::vector<int>> group_members(n_groups);
   for (int i = 0; i < n_events; i++) {
     group_members[group_ids[i]].push_back(i);
   }
 
-  // Process each column in parallel
-  // Each thread builds its own triplet list, then we merge
+  // ============================================================================
+  // PASS 1: Count non-zeros per column
+  // ============================================================================
 
-  std::vector<std::vector<uword>> all_rows(n_cells);
-  std::vector<std::vector<uword>> all_cols(n_cells);
-  std::vector<std::vector<double>> all_vals(n_cells);
+  std::vector<size_t> col_nnz(n_cells, 0);
 
 #ifdef _OPENMP
-#pragma omp parallel for schedule(dynamic) if(n_threads > 1)
-#endif
-  for (int j = 0; j < n_cells; j++) {
-    // Compute group sums for this column
-    std::vector<double> group_sum(n_groups, 0.0);
+#pragma omp parallel if(n_threads > 1)
+{
+  // Thread-local workspace for group sums
+  std::vector<double> group_sum_local(n_groups);
 
-    // Get column slice from sparse matrix
+#pragma omp for schedule(dynamic)
+  for (int j = 0; j < n_cells; j++) {
+    // Reset workspace
+    std::fill(group_sum_local.begin(), group_sum_local.end(), 0.0);
+
+    // Compute group sums for this column
     for (sp_mat::const_col_iterator it = M1.begin_col(j); it != M1.end_col(j); ++it) {
       int row = it.row();
-      double val = *it;
-      group_sum[group_ids[row]] += val;
+      group_sum_local[group_ids[row]] += *it;
     }
 
-    // Compute M2 values for this column
+    // Count non-zeros for this column
+    size_t count = 0;
+    for (int g = 0; g < n_groups; g++) {
+      double total = group_sum_local[g];
+      if (total == 0) continue;
+
+      const std::vector<int>& members = group_members[g];
+      for (int i : members) {
+        double m1_val = M1(i, j);
+        double m2_val = total - m1_val;
+        if (m2_val != 0) {
+          count++;
+        }
+      }
+    }
+    col_nnz[j] = count;
+  }
+}
+#else
+  // Single-threaded version
+  std::vector<double> group_sum(n_groups);
+  for (int j = 0; j < n_cells; j++) {
+    std::fill(group_sum.begin(), group_sum.end(), 0.0);
+
+    for (sp_mat::const_col_iterator it = M1.begin_col(j); it != M1.end_col(j); ++it) {
+      int row = it.row();
+      group_sum[group_ids[row]] += *it;
+    }
+
+    size_t count = 0;
     for (int g = 0; g < n_groups; g++) {
       double total = group_sum[g];
       if (total == 0) continue;
@@ -223,37 +121,166 @@ arma::sp_mat make_m2_cpp_parallel(const arma::sp_mat& M1,
       for (int i : members) {
         double m1_val = M1(i, j);
         double m2_val = total - m1_val;
-
         if (m2_val != 0) {
-          all_rows[j].push_back(i);
-          all_cols[j].push_back(j);
-          all_vals[j].push_back(m2_val);
+          count++;
         }
       }
     }
+    col_nnz[j] = count;
   }
+#endif
 
-  // Count total non-zeros
-  size_t total_nnz = 0;
+  // ============================================================================
+  // Build column pointers (CSC format)
+  // ============================================================================
+
+  std::vector<size_t> col_ptr(n_cells + 1);
+  col_ptr[0] = 0;
   for (int j = 0; j < n_cells; j++) {
-    total_nnz += all_vals[j].size();
+    col_ptr[j + 1] = col_ptr[j] + col_nnz[j];
   }
+  size_t total_nnz = col_ptr[n_cells];
 
-  // Merge all triplets
-  arma::umat locations(2, total_nnz);
-  arma::vec vals(total_nnz);
+  // Allocate output arrays (exactly sized - no waste)
+  std::vector<uword> row_indices(total_nnz);
+  std::vector<double> values(total_nnz);
 
-  size_t idx = 0;
+  // ============================================================================
+  // PASS 2: Fill in values
+  // ============================================================================
+
+#ifdef _OPENMP
+#pragma omp parallel if(n_threads > 1)
+{
+  // Thread-local workspace
+  std::vector<double> group_sum_local(n_groups);
+
+#pragma omp for schedule(dynamic)
   for (int j = 0; j < n_cells; j++) {
-    for (size_t k = 0; k < all_vals[j].size(); k++) {
-      locations(0, idx) = all_rows[j][k];
-      locations(1, idx) = all_cols[j][k];
-      vals(idx) = all_vals[j][k];
-      idx++;
+    // Reset workspace
+    std::fill(group_sum_local.begin(), group_sum_local.end(), 0.0);
+
+    // Compute group sums for this column
+    for (sp_mat::const_col_iterator it = M1.begin_col(j); it != M1.end_col(j); ++it) {
+      int row = it.row();
+      group_sum_local[group_ids[row]] += *it;
+    }
+
+    // Fill in M2 values for this column
+    size_t write_idx = col_ptr[j];
+
+    // We need to write rows in sorted order for valid CSC format
+    // Collect (row, value) pairs first, then sort
+    std::vector<std::pair<uword, double>> col_entries;
+    col_entries.reserve(col_nnz[j]);
+
+    for (int g = 0; g < n_groups; g++) {
+      double total = group_sum_local[g];
+      if (total == 0) continue;
+
+      const std::vector<int>& members = group_members[g];
+      for (int i : members) {
+        double m1_val = M1(i, j);
+        double m2_val = total - m1_val;
+        if (m2_val != 0) {
+          col_entries.emplace_back(static_cast<uword>(i), m2_val);
+        }
+      }
+    }
+
+    // Sort by row index (required for CSC format)
+    std::sort(col_entries.begin(), col_entries.end(),
+              [](const std::pair<uword, double>& a, const std::pair<uword, double>& b) {
+                return a.first < b.first;
+              });
+
+    // Write to output arrays
+    for (const auto& entry : col_entries) {
+      row_indices[write_idx] = entry.first;
+      values[write_idx] = entry.second;
+      write_idx++;
     }
   }
+}
+#else
+  // Single-threaded version
+  std::vector<double> group_sum2(n_groups);
+  for (int j = 0; j < n_cells; j++) {
+    std::fill(group_sum2.begin(), group_sum2.end(), 0.0);
 
-  arma::sp_mat M2(locations, vals, n_events, n_cells);
+    for (sp_mat::const_col_iterator it = M1.begin_col(j); it != M1.end_col(j); ++it) {
+      int row = it.row();
+      group_sum2[group_ids[row]] += *it;
+    }
+
+    size_t write_idx = col_ptr[j];
+    std::vector<std::pair<uword, double>> col_entries;
+    col_entries.reserve(col_nnz[j]);
+
+    for (int g = 0; g < n_groups; g++) {
+      double total = group_sum2[g];
+      if (total == 0) continue;
+
+      const std::vector<int>& members = group_members[g];
+      for (int i : members) {
+        double m1_val = M1(i, j);
+        double m2_val = total - m1_val;
+        if (m2_val != 0) {
+          col_entries.emplace_back(static_cast<uword>(i), m2_val);
+        }
+      }
+    }
+
+    std::sort(col_entries.begin(), col_entries.end(),
+              [](const std::pair<uword, double>& a, const std::pair<uword, double>& b) {
+                return a.first < b.first;
+              });
+
+    for (const auto& entry : col_entries) {
+      row_indices[write_idx] = entry.first;
+      values[write_idx] = entry.second;
+      write_idx++;
+    }
+  }
+#endif
+
+  // ============================================================================
+  // Construct sparse matrix directly from CSC components
+  // ============================================================================
+
+  // Convert to arma types
+  arma::uvec rowind(total_nnz);
+  arma::vec vals(total_nnz);
+  arma::uvec colptr(n_cells + 1);
+
+  for (size_t k = 0; k < total_nnz; k++) {
+    rowind[k] = row_indices[k];
+    vals[k] = values[k];
+  }
+  for (int j = 0; j <= n_cells; j++) {
+    colptr[j] = col_ptr[j];
+  }
+
+  // Create sparse matrix from CSC components
+  arma::sp_mat M2(rowind, colptr, vals, n_events, n_cells);
 
   return M2;
+}
+
+
+//' Legacy function - redirects to memory-efficient version
+//'
+//' @param M1 Sparse matrix (dgCMatrix) of inclusion counts (events x cells)
+//' @param group_ids Integer vector of group IDs for each event
+//' @param n_threads Number of threads for OpenMP (default 1)
+//'
+//' @return Sparse matrix M2 with same dimensions as M1
+//'
+//' @keywords internal
+// [[Rcpp::export]]
+arma::sp_mat make_m2_cpp(const arma::sp_mat& M1,
+                          const IntegerVector& group_ids,
+                          int n_threads = 1) {
+  // Redirect to memory-efficient parallel version
+  return make_m2_cpp_parallel(M1, group_ids, n_threads);
 }

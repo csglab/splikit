@@ -127,19 +127,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// make_m2_cpp
-arma::sp_mat make_m2_cpp(const arma::sp_mat& M1, const IntegerVector& group_ids, int n_threads);
-RcppExport SEXP _splikit_make_m2_cpp(SEXP M1SEXP, SEXP group_idsSEXP, SEXP n_threadsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::sp_mat& >::type M1(M1SEXP);
-    Rcpp::traits::input_parameter< const IntegerVector& >::type group_ids(group_idsSEXP);
-    Rcpp::traits::input_parameter< int >::type n_threads(n_threadsSEXP);
-    rcpp_result_gen = Rcpp::wrap(make_m2_cpp(M1, group_ids, n_threads));
-    return rcpp_result_gen;
-END_RCPP
-}
 // make_m2_cpp_parallel
 arma::sp_mat make_m2_cpp_parallel(const arma::sp_mat& M1, const IntegerVector& group_ids, int n_threads);
 RcppExport SEXP _splikit_make_m2_cpp_parallel(SEXP M1SEXP, SEXP group_idsSEXP, SEXP n_threadsSEXP) {
@@ -150,6 +137,19 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const IntegerVector& >::type group_ids(group_idsSEXP);
     Rcpp::traits::input_parameter< int >::type n_threads(n_threadsSEXP);
     rcpp_result_gen = Rcpp::wrap(make_m2_cpp_parallel(M1, group_ids, n_threads));
+    return rcpp_result_gen;
+END_RCPP
+}
+// make_m2_cpp
+arma::sp_mat make_m2_cpp(const arma::sp_mat& M1, const IntegerVector& group_ids, int n_threads);
+RcppExport SEXP _splikit_make_m2_cpp(SEXP M1SEXP, SEXP group_idsSEXP, SEXP n_threadsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type M1(M1SEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type group_ids(group_idsSEXP);
+    Rcpp::traits::input_parameter< int >::type n_threads(n_threadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(make_m2_cpp(M1, group_ids, n_threads));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -175,8 +175,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_splikit_cppBetabinPseudoR2_mixed2", (DL_FUNC) &_splikit_cppBetabinPseudoR2_mixed2, 4},
     {"_splikit_calcNBDeviancesWithThetaEstimation", (DL_FUNC) &_splikit_calcNBDeviancesWithThetaEstimation, 2},
     {"_splikit_standardizeSparse_variance_vst", (DL_FUNC) &_splikit_standardizeSparse_variance_vst, 2},
-    {"_splikit_make_m2_cpp", (DL_FUNC) &_splikit_make_m2_cpp, 3},
     {"_splikit_make_m2_cpp_parallel", (DL_FUNC) &_splikit_make_m2_cpp_parallel, 3},
+    {"_splikit_make_m2_cpp", (DL_FUNC) &_splikit_make_m2_cpp, 3},
     {"_splikit_rowVariance_cpp", (DL_FUNC) &_splikit_rowVariance_cpp, 1},
     {NULL, NULL, 0}
 };
