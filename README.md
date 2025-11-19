@@ -8,8 +8,8 @@
 
 ## **Requirements**
 
--   [R version 3.5.0](http://www.r-project.org/) or later.
--   R libraries: [Rcpp](https://cran.r-project.org/web/packages/Rcpp/index.html), [RcppArmadillo](https://cran.r-project.org/web/packages/RcppArmadillo/index.html), [Matrix](https://cran.r-project.org/web/packages/Matrix/index.html), [data.table](https://cran.r-project.org/web/packages/data.table/index.html), [R6](https://cran.r-project.org/web/packages/R6/index.html)
+-   [R version 3.5.0](https://r-project.org/) or later.
+-   R libraries: [Rcpp](https://CRAN.R-project.org/package=Rcpp), [RcppArmadillo](https://CRAN.R-project.org/package=RcppArmadillo), [Matrix](https://CRAN.R-project.org/package=Matrix), [data.table](https://CRAN.R-project.org/package=data.table), [R6](https://CRAN.R-project.org/package=R6)
 
 
 ## Installation
