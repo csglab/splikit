@@ -19,7 +19,23 @@
 #'  # printing the results
 #'  print(HVE[order(-sum_deviance)])
 #' @export
-find_variable_events <- function(m1_matrix, m2_matrix, min_row_sum = 50, n_threads=1, verbose=TRUE, ...) {
+find_variable_events <- function(m1_matrix, m2_matrix = NULL, min_row_sum = 50, n_threads=1, verbose=TRUE, ...) {
+
+
+  # Handle SplikitObject input
+  if (inherits(m1_matrix, "SplikitObject")) {
+    obj <- m1_matrix
+    if (is.null(obj$m2)) {
+      stop("SplikitObject has no M2 matrix. Call obj$makeM2() first.", call. = FALSE)
+    }
+    m1_matrix <- obj$m1
+    m2_matrix <- obj$m2
+  }
+
+  # Check if m2_matrix is provided
+  if (is.null(m2_matrix)) {
+    stop("m2_matrix is required. Provide either both matrices or a SplikitObject.", call. = FALSE)
+  }
 
   # Check if matrices are sparse
   if (!(inherits(m1_matrix, "Matrix") && inherits(m2_matrix, "Matrix"))) {
