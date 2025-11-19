@@ -422,23 +422,20 @@ SplikitObject <- R6::R6Class("SplikitObject",
     #' @description
     #' Create a deep copy of the object.
     #'
+    #' @param deep If TRUE, creates a deep copy of all data.
+    #'
     #' @return A new SplikitObject with copied data.
-    clone = function(deep = TRUE) {
-      if (deep) {
-        new_obj <- SplikitObject$new(
-          m1 = self$m1,
-          m2 = self$m2,
-          eventData = if (!is.null(self$eventData)) data.table::copy(self$eventData) else NULL
-        )
-        if (!is.null(self$geneExpression)) {
-          new_obj$geneExpression <- self$geneExpression
-        }
-        new_obj$metadata <- self$metadata
-        return(new_obj)
-      } else {
-        # Shallow copy (default R6 behavior)
-        super$clone(deep = FALSE)
+    deepCopy = function() {
+      new_obj <- SplikitObject$new(
+        m1 = self$m1,
+        m2 = self$m2,
+        eventData = if (!is.null(self$eventData)) data.table::copy(self$eventData) else NULL
+      )
+      if (!is.null(self$geneExpression)) {
+        new_obj$geneExpression <- self$geneExpression
       }
+      new_obj$metadata <- self$metadata
+      return(new_obj)
     }
   ),
 
