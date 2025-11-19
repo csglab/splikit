@@ -49,11 +49,6 @@ m1_inclusion <- m1_obj$m1_inclusion_matrix
 eventdata <- m1_obj$event_data
 m2_exclusion <- make_m2(m1_inclusion, eventdata)
 
-# filter events based on junction coverage
-index_to_keep <- which(rowSums(m1_inclusion) > 10)
-m1_inclusion <- m1_inclusion[index_to_keep, ]
-m2_exclusion <- m2_exclusion[index_to_keep, ]
-
 \donttest{
 
 # creating a dummy ZDB
