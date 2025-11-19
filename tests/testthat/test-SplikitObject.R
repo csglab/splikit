@@ -3,7 +3,7 @@
 
 test_that("SplikitObject initializes from matrices", {
   # Load test data
-  test_data <- readRDS("../../../test_splikit.rds")
+  test_data <- load_toy_M1_M2_object()
 
   # Create object from existing matrices
   obj <- SplikitObject$new(
@@ -12,14 +12,14 @@ test_that("SplikitObject initializes from matrices", {
   )
 
   expect_s3_class(obj, "SplikitObject")
-  expect_equal(nrow(obj$m1), 25020)
-  expect_equal(ncol(obj$m1), 7500)
+  expect_equal(nrow(obj$m1), 2000)
+  expect_equal(ncol(obj$m1), 2000)
   expect_true(!is.null(obj$eventData))
   expect_true(is.null(obj$m2))
 })
 
 test_that("SplikitObject validates dimension mismatches", {
-  test_data <- readRDS("../../../test_splikit.rds")
+  test_data <- load_toy_M1_M2_object()
 
   # Wrong number of rows in eventData
   bad_eventdata <- test_data$eventdata[1:100, ]
@@ -31,7 +31,7 @@ test_that("SplikitObject validates dimension mismatches", {
 })
 
 test_that("SplikitObject validates m1/m2 dimension mismatch", {
-  test_data <- readRDS("../../../test_splikit.rds")
+  test_data <- load_toy_M1_M2_object()
 
   # Create m2 with wrong dimensions
   bad_m2 <- test_data$m1[1:100, ]
@@ -45,7 +45,7 @@ test_that("SplikitObject validates m1/m2 dimension mismatch", {
 test_that("SplikitObject$makeM2 produces same result as make_m2 function", {
   skip_if_not_installed("Matrix")
 
-  test_data <- readRDS("../../../test_splikit.rds")
+  test_data <- load_toy_M1_M2_object()
 
   # Old method
   m2_old <- make_m2(
@@ -75,7 +75,7 @@ test_that("SplikitObject$makeM2 produces same result as make_m2 function", {
 test_that("SplikitObject$findVariableEvents produces same result as function", {
   skip_if_not_installed("Matrix")
 
-  test_data <- readRDS("../../../test_splikit.rds")
+  test_data <- load_toy_M1_M2_object()
 
   # Compute M2 first
   m2 <- make_m2(
@@ -114,7 +114,7 @@ test_that("SplikitObject$findVariableEvents produces same result as function", {
 })
 
 test_that("SplikitObject$subset works correctly", {
-  test_data <- readRDS("../../../test_splikit.rds")
+  test_data <- load_toy_M1_M2_object()
 
   obj <- SplikitObject$new(
     m1 = test_data$m1,
@@ -133,7 +133,7 @@ test_that("SplikitObject$subset works correctly", {
 })
 
 test_that("SplikitObject$subset validates empty results", {
-  test_data <- readRDS("../../../test_splikit.rds")
+  test_data <- load_toy_M1_M2_object()
 
   obj <- SplikitObject$new(
     m1 = test_data$m1,
@@ -148,7 +148,7 @@ test_that("SplikitObject$subset validates empty results", {
 })
 
 test_that("SplikitObject$findVariableEvents validates threshold", {
-  test_data <- readRDS("../../../test_splikit.rds")
+  test_data <- load_toy_M1_M2_object()
 
   # Compute M2
   m2 <- make_m2(
@@ -171,7 +171,7 @@ test_that("SplikitObject$findVariableEvents validates threshold", {
 })
 
 test_that("SplikitObject requires M2 for findVariableEvents", {
-  test_data <- readRDS("../../../test_splikit.rds")
+  test_data <- load_toy_M1_M2_object()
 
   obj <- SplikitObject$new(
     m1 = test_data$m1,
@@ -186,7 +186,7 @@ test_that("SplikitObject requires M2 for findVariableEvents", {
 })
 
 test_that("SplikitObject$summary returns correct information", {
-  test_data <- readRDS("../../../test_splikit.rds")
+  test_data <- load_toy_M1_M2_object()
 
   m2 <- make_m2(
     m1_inclusion_matrix = test_data$m1,
@@ -202,8 +202,8 @@ test_that("SplikitObject$summary returns correct information", {
 
   summ <- obj$summary()
 
-  expect_equal(summ$events, 25020)
-  expect_equal(summ$cells, 7500)
+  expect_equal(summ$events, 2000)
+  expect_equal(summ$cells, 2000)
   expect_true(summ$has_m2)
   expect_false(summ$has_gene_expression)
   expect_true(is.numeric(summ$sparsity_m1))
@@ -211,7 +211,7 @@ test_that("SplikitObject$summary returns correct information", {
 })
 
 test_that("SplikitObject$print works without error", {
-  test_data <- readRDS("../../../test_splikit.rds")
+  test_data <- load_toy_M1_M2_object()
 
   obj <- SplikitObject$new(
     m1 = test_data$m1,
@@ -225,7 +225,7 @@ test_that("SplikitObject$print works without error", {
 })
 
 test_that("SplikitObject method chaining works", {
-  test_data <- readRDS("../../../test_splikit.rds")
+  test_data <- load_toy_M1_M2_object()
 
   obj <- SplikitObject$new(
     m1 = test_data$m1,
@@ -241,7 +241,7 @@ test_that("SplikitObject method chaining works", {
 })
 
 test_that("splikit() convenience function works", {
-  test_data <- readRDS("../../../test_splikit.rds")
+  test_data <- load_toy_M1_M2_object()
 
   obj <- splikit(
     m1 = test_data$m1,
@@ -249,11 +249,11 @@ test_that("splikit() convenience function works", {
   )
 
   expect_s3_class(obj, "SplikitObject")
-  expect_equal(nrow(obj$m1), 25020)
+  expect_equal(nrow(obj$m1), 2000)
 })
 
 test_that("SplikitObject$setGeneExpression validates dimensions", {
-  test_data <- readRDS("../../../test_splikit.rds")
+  test_data <- load_toy_M1_M2_object()
 
   obj <- SplikitObject$new(
     m1 = test_data$m1,
@@ -270,7 +270,7 @@ test_that("SplikitObject$setGeneExpression validates dimensions", {
 })
 
 test_that("SplikitObject$getPseudoCorrelation validates dimensions", {
-  test_data <- readRDS("../../../test_splikit.rds")
+  test_data <- load_toy_M1_M2_object()
 
   m2 <- make_m2(
     m1_inclusion_matrix = test_data$m1,
@@ -294,7 +294,7 @@ test_that("SplikitObject$getPseudoCorrelation validates dimensions", {
 })
 
 test_that("SplikitObject$deepCopy creates independent copy", {
-  test_data <- readRDS("../../../test_splikit.rds")
+  test_data <- load_toy_M1_M2_object()
 
   obj1 <- SplikitObject$new(
     m1 = test_data$m1,
@@ -308,11 +308,11 @@ test_that("SplikitObject$deepCopy creates independent copy", {
 
   # obj2 should be unchanged
   expect_equal(nrow(obj1$m1), 100)
-  expect_equal(nrow(obj2$m1), 25020)
+  expect_equal(nrow(obj2$m1), 2000)
 })
 
 test_that("SplikitObject stores results in metadata", {
-  test_data <- readRDS("../../../test_splikit.rds")
+  test_data <- load_toy_M1_M2_object()
 
   m2 <- make_m2(
     m1_inclusion_matrix = test_data$m1,
@@ -335,7 +335,7 @@ test_that("SplikitObject stores results in metadata", {
 })
 
 test_that("SplikitObject handles sparse matrix conversion", {
-  test_data <- readRDS("../../../test_splikit.rds")
+  test_data <- load_toy_M1_M2_object()
 
   # Convert to dense and back
   m1_dense <- as.matrix(test_data$m1[1:100, 1:100])
@@ -350,7 +350,7 @@ test_that("SplikitObject handles sparse matrix conversion", {
 })
 
 test_that("SplikitObject$annotateEvents validates file existence", {
-  test_data <- readRDS("../../../test_splikit.rds")
+  test_data <- load_toy_M1_M2_object()
 
   obj <- SplikitObject$new(
     m1 = test_data$m1,
@@ -366,7 +366,7 @@ test_that("SplikitObject$annotateEvents validates file existence", {
 test_that("Backward compatibility: old functions still work", {
   skip_if_not_installed("Matrix")
 
-  test_data <- readRDS("../../../test_splikit.rds")
+  test_data <- load_toy_M1_M2_object()
 
   # Old workflow should still work exactly as before
   m2 <- make_m2(
@@ -417,7 +417,7 @@ test_that("get_pseudo_correlation catches dimension mismatches", {
   # Issue #14 from deep analysis
   skip_if_not_installed("Matrix")
 
-  test_data <- readRDS("../../../test_splikit.rds")
+  test_data <- load_toy_M1_M2_object()
 
   m2 <- make_m2(
     m1_inclusion_matrix = test_data$m1,
@@ -436,7 +436,7 @@ test_that("get_pseudo_correlation catches dimension mismatches", {
 
 test_that("find_variable_events handles very high threshold gracefully", {
   # Issue #23 from deep analysis
-  test_data <- readRDS("../../../test_splikit.rds")
+  test_data <- load_toy_M1_M2_object()
 
   m2 <- make_m2(
     m1_inclusion_matrix = test_data$m1,
@@ -452,7 +452,7 @@ test_that("find_variable_events handles very high threshold gracefully", {
 })
 
 test_that("SplikitObject validates negative threshold", {
-  test_data <- readRDS("../../../test_splikit.rds")
+  test_data <- load_toy_M1_M2_object()
 
   m2 <- make_m2(
     m1_inclusion_matrix = test_data$m1,
@@ -472,7 +472,7 @@ test_that("SplikitObject validates negative threshold", {
 })
 
 test_that("SplikitObject handles subset by names", {
-  test_data <- readRDS("../../../test_splikit.rds")
+  test_data <- load_toy_M1_M2_object()
 
   obj <- SplikitObject$new(
     m1 = test_data$m1,
@@ -489,7 +489,7 @@ test_that("SplikitObject handles subset by names", {
 })
 
 test_that("SplikitObject subset warns about missing names", {
-  test_data <- readRDS("../../../test_splikit.rds")
+  test_data <- load_toy_M1_M2_object()
 
   obj <- SplikitObject$new(
     m1 = test_data$m1,
@@ -508,7 +508,7 @@ test_that("SplikitObject subset warns about missing names", {
 })
 
 test_that("SplikitObject handles single event subset", {
-  test_data <- readRDS("../../../test_splikit.rds")
+  test_data <- load_toy_M1_M2_object()
 
   obj <- SplikitObject$new(
     m1 = test_data$m1,
@@ -522,7 +522,7 @@ test_that("SplikitObject handles single event subset", {
 })
 
 test_that("SplikitObject handles single cell subset", {
-  test_data <- readRDS("../../../test_splikit.rds")
+  test_data <- load_toy_M1_M2_object()
 
   obj <- SplikitObject$new(
     m1 = test_data$m1,
@@ -536,7 +536,7 @@ test_that("SplikitObject handles single cell subset", {
 
 test_that("make_m2 produces symmetric results for group operations", {
   # Verify M2 = group_sum - M1 for each event
-  test_data <- readRDS("../../../test_splikit.rds")
+  test_data <- load_toy_M1_M2_object()
 
   m2 <- make_m2(
     m1_inclusion_matrix = test_data$m1,
@@ -569,7 +569,7 @@ test_that("make_m2 produces symmetric results for group operations", {
 test_that("Full R6 pipeline runs without errors", {
   skip_if_not_installed("Matrix")
 
-  test_data <- readRDS("../../../test_splikit.rds")
+  test_data <- load_toy_M1_M2_object()
 
   # Create object
 
@@ -619,7 +619,7 @@ test_that("SplikitObject works with very small matrices", {
 })
 
 test_that("n_threads parameter is passed correctly", {
-  test_data <- readRDS("../../../test_splikit.rds")
+  test_data <- load_toy_M1_M2_object()
 
   m2 <- make_m2(
     m1_inclusion_matrix = test_data$m1,

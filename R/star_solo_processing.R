@@ -60,6 +60,8 @@ make_junction_ab <- function(STARsolo_SJ_dirs, white_barcode_lists = NULL, sampl
 
   # Helper function to process one sample
   process_sj_sample <- function(STARsolo_SJ_dir, white_barcode_list, sample_id) {
+    # Avoid R CMD check NOTE for data.table NSE
+    unique_mapped <- NULL
     # Define paths
     mtx_dir <- file.path(STARsolo_SJ_dir, "raw", "matrix.mtx")
     feature_dir <- file.path(STARsolo_SJ_dir, "../../SJ.out.tab")
@@ -796,10 +798,7 @@ make_m2 <- function(m1_inclusion_matrix, eventdata, batch_size = 5000,
   return(result)
 }
 
-#' Fast M2 Processing (Internal Function)
-#'
-#' Implements the original fast approach using data.table operations.
-#' This approach creates the full operation in memory at once.
+#' @keywords internal
 .make_m2_fast <- function(m1_inclusion_matrix, group_ids, verbose) {
 
   cat("+-- Step 3 | Creating M2 (fast approach)\n")
@@ -854,10 +853,7 @@ make_m2 <- function(m1_inclusion_matrix, eventdata, batch_size = 5000,
   return(M2)
 }
 
-#' Batched M2 Processing (Internal Function)
-#'
-#' Implements the batched triplet combination approach for memory-efficient processing.
-#' Processes groups in batches using lapply/mclapply and combines results efficiently.
+#' @keywords internal
 .make_m2_batched <- function(m1_inclusion_matrix, group_ids, batch_size,
                              unique_groups, multi_thread, verbose) {
 
