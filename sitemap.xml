@@ -7,6 +7,10 @@
 <url><loc>https://arshammik.github.io/splikit/articles/splikit_manual.html</loc></url>
 <url><loc>https://arshammik.github.io/splikit/authors.html</loc></url>
 <url><loc>https://arshammik.github.io/splikit/index.html</loc></url>
+<url><loc>https://arshammik.github.io/splikit/news/index.html</loc></url>
+<url><loc>https://arshammik.github.io/splikit/reference/SplikitObject.html</loc></url>
+<url><loc>https://arshammik.github.io/splikit/reference/dot-make_m2_batched.html</loc></url>
+<url><loc>https://arshammik.github.io/splikit/reference/dot-make_m2_fast.html</loc></url>
 <url><loc>https://arshammik.github.io/splikit/reference/find_variable_events.html</loc></url>
 <url><loc>https://arshammik.github.io/splikit/reference/find_variable_genes.html</loc></url>
 <url><loc>https://arshammik.github.io/splikit/reference/get_pseudo_correlation.html</loc></url>
@@ -20,6 +24,9 @@
 <url><loc>https://arshammik.github.io/splikit/reference/make_junction_ab.html</loc></url>
 <url><loc>https://arshammik.github.io/splikit/reference/make_m1.html</loc></url>
 <url><loc>https://arshammik.github.io/splikit/reference/make_m2.html</loc></url>
+<url><loc>https://arshammik.github.io/splikit/reference/make_m2_cpp.html</loc></url>
+<url><loc>https://arshammik.github.io/splikit/reference/make_m2_cpp_parallel.html</loc></url>
 <url><loc>https://arshammik.github.io/splikit/reference/make_velo_count.html</loc></url>
+<url><loc>https://arshammik.github.io/splikit/reference/splikit.html</loc></url>
 </urlset>
 

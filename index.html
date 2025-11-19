@@ -5,15 +5,26 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>splikit • splikit</title>
+<title>Splikit - Single-Cell RNA Splicing Analysis Toolkit • splikit</title>
+<!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="favicon-96x96.png">
+<link rel="icon" type="”image/svg+xml”" href="favicon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="icon" sizes="any" href="favicon.ico">
+<link rel="manifest" href="site.webmanifest">
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="splikit">
+<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Splikit - Single-Cell RNA Splicing Analysis Toolkit">
 <meta name="description" content="A toolkit for analyzing single-cell RNA splicing data">
 <meta property="og:description" content="A toolkit for analyzing single-cell RNA splicing data">
 <meta property="og:image" content="https://arshammik.github.io/splikit/logo.png">
+<style>
+.template-home img[src*="logo.png"] {
+  max-height: 180px;
+  height: 180px;
+}
+</style>
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -23,7 +34,7 @@
 
     <a class="navbar-brand me-2" href="index.html">splikit</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">1.0.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,12 +43,12 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
+<li class="nav-item"><a class="nav-link" href="articles/splikit_manual.html">Manual</a></li>
 <li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
-  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="articles/splikit_manual.html">Splikit Manual for Single-Cell Splicing Analysis</a></li>
-    <li><a class="dropdown-item" href="articles/STARsolo_guide.html">STARsolo Processing Guide for Splicing Analysis</a></li>
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-guides" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Guides</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-guides">
+<li><a class="dropdown-item" href="articles/STARsolo_guide.html">STARsolo Processing Guide</a></li>
   </ul>
 </li>
       </ul>
@@ -45,7 +56,7 @@
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="search.json">
 </form></li>
-<li class="nav-item"><a class="external-link nav-link" href="https://github.com/Arshammik/splikit"><span class="fa fab fa-github fa-lg"></span></a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/Arshammik/splikit/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
       </ul>
 </div>
 
@@ -54,42 +65,112 @@
 </nav><div class="container template-home">
 <div class="row">
   <main id="main" class="col-md-9"><p><img src="reference/figures/logo.png" align="right" height="240"></p>
-<p><strong>Splikit</strong> /ˈsplaɪ.kɪt/ is a toolkit designed for analyzing high-dimensional single-cell splicing data. It provides a framework for extracting and working with ratio-based data structures derived from single-cell RNA sequencing experiments. The package avoids the need for bulky S4 objects by offering direct and efficient manipulation of matrices. Core functionalities are implemented in C++ via Rcpp to ensure high performance and scalability on large datasets.</p>
-<p><a href="https://github.com/Arshammik/splikit/actions/workflows/R-CMD-check.yml" class="external-link"><img src="https://github.com/Arshammik/splikit/actions/workflows/R-CMD-check.yml/badge.svg" alt="R-CMD-check"></a> <a href="./vignettes/splikit_manual.Rmd"><img src="https://img.shields.io/badge/Docs-Learn%20More-blue.svg" alt="Documentation"></a></p>
+<p><strong>Splikit</strong> /ˈsplaɪ.kɪt/ is a comprehensive R toolkit for analyzing alternative splicing in single-cell RNA sequencing (scRNA-seq) data. It offers a streamlined workflow for transforming raw junction abundance data from tools such as STARsolo into actionable insights—detecting differential splicing events and enabling rich downstream analyses. Designed for both power and ease of use, Splikit integrates high-performance C++ implementations and memory-efficient data structures to handle large datasets, all through a clean and intuitive R interface.</p>
+<p><a href="https://github.com/csglab/splikit/actions/workflows/R-CMD-check.yml" class="external-link"><img src="https://github.com/csglab/splikit/actions/workflows/R-CMD-check.yml/badge.svg" alt="R-CMD-check"></a> <a href="https://csglab.github.io/splikit/" class="external-link"><img src="https://img.shields.io/badge/Docs-Learn%20More-blue.svg" alt="Documentation"></a></p>
 <div class="section level2">
-<h2 id="requirments">
-<strong>Requirments</strong><a class="anchor" aria-label="anchor" href="#requirments"></a>
+<h2 id="requirements">
+<strong>Requirements</strong><a class="anchor" aria-label="anchor" href="#requirements"></a>
 </h2>
 <ul>
 <li>
 <a href="http://www.r-project.org/" class="external-link">R version 3.5.0</a> or later.</li>
-<li>R libraries: <a href="https://cran.r-project.org/web/packages/Rcpp/index.html" class="external-link">Rcpp</a>, <a href="https://cran.r-project.org/web/packages/RcppArmadillo/index.html" class="external-link">RcppArmadillo</a>, <a href="https://cran.r-project.org/web/packages/Matrix/index.html" class="external-link">Matrix</a>, <a href="https://cran.r-project.org/web/packages/data.table/index.html" class="external-link">data.table</a>
+<li>R libraries: <a href="https://cran.r-project.org/web/packages/Rcpp/index.html" class="external-link">Rcpp</a>, <a href="https://cran.r-project.org/web/packages/RcppArmadillo/index.html" class="external-link">RcppArmadillo</a>, <a href="https://cran.r-project.org/web/packages/Matrix/index.html" class="external-link">Matrix</a>, <a href="https://cran.r-project.org/web/packages/data.table/index.html" class="external-link">data.table</a>, <a href="https://cran.r-project.org/web/packages/R6/index.html" class="external-link">R6</a>
 </li>
 </ul>
 </div>
 <div class="section level2">
-<h2 id="installation">
-<strong>Installation</strong><a class="anchor" aria-label="anchor" href="#installation"></a>
+<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p>To install the latest version of splikit from GitHub:</p>
+<p>To install the latest version of <code>splikit</code> from GitHub:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Install devtools if you haven't already</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"devtools"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Install splikit</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"Arshammik/splikit"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"csglab/splikit"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="documentation">
-<strong>Documentation</strong><a class="anchor" aria-label="anchor" href="#documentation"></a>
+<h2 id="usage">Usage<a class="anchor" aria-label="anchor" href="#usage"></a>
 </h2>
-<p>Comprehensive documentation is available at: 1. <a href="./vignettes/splikit_manual.Rmd">Full Manual</a> 2. <a href="./vignettes/STARsolo_guide.Rmd">STARsolo Processing Guide</a> 3. <a href="https://arshammik.github.io/splikit/">Package Website</a> (after GitHub Pages deployment)</p>
+<p>Splikit provides two ways to work with your data: a modern <strong>R6 class interface</strong> (recommended) and <strong>traditional functions</strong> (for backward compatibility).</p>
+<div class="section level3">
+<h3 id="r6-class-interface-recommended">R6 Class Interface (Recommended)<a class="anchor" aria-label="anchor" href="#r6-class-interface-recommended"></a>
+</h3>
+<p>The <code>SplikitObject</code> class provides a clean, chainable interface with built-in validation:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://arshammik.github.io/splikit/">splikit</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Load data and create SplikitObject</span></span>
+<span><span class="va">junction_ab</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/load_toy_SJ_object.html">load_toy_SJ_object</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/splikit.html">splikit</a></span><span class="op">(</span>junction_ab <span class="op">=</span> <span class="va">junction_ab</span>, min_counts <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Compute M2 exclusion matrix (uses fast C++ implementation)</span></span>
+<span><span class="va">obj</span><span class="op">$</span><span class="fu">makeM2</span><span class="op">(</span>n_threads <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Find highly variable splicing events</span></span>
+<span><span class="va">HVE</span> <span class="op">&lt;-</span> <span class="va">obj</span><span class="op">$</span><span class="fu">findVariableEvents</span><span class="op">(</span>min_row_sum <span class="op">=</span> <span class="fl">50</span>, n_threads <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># View object summary</span></span>
+<span><span class="va">obj</span><span class="op">$</span><span class="fu">summary</span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Access data directly</span></span>
+<span><span class="va">m1_matrix</span> <span class="op">&lt;-</span> <span class="va">obj</span><span class="op">$</span><span class="va">m1</span></span>
+<span><span class="va">m2_matrix</span> <span class="op">&lt;-</span> <span class="va">obj</span><span class="op">$</span><span class="va">m2</span></span>
+<span><span class="va">event_data</span> <span class="op">&lt;-</span> <span class="va">obj</span><span class="op">$</span><span class="va">eventData</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="traditional-function-interface">Traditional Function Interface<a class="anchor" aria-label="anchor" href="#traditional-function-interface"></a>
+</h3>
+<p>The original function-based approach remains fully supported:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Create m1 matrix from a junction abundance object</span></span>
+<span><span class="va">junction_abundance_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/load_toy_SJ_object.html">load_toy_SJ_object</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">m1_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/make_m1.html">make_m1</a></span><span class="op">(</span></span>
+<span>  <span class="va">junction_abundance_object</span>,</span>
+<span>  min_counts <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Create m2 matrix from the m1 inclusion matrix</span></span>
+<span><span class="va">m2_matrix</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/make_m2.html">make_m2</a></span><span class="op">(</span></span>
+<span>  m1_inclusion_matrix <span class="op">=</span> <span class="va">m1_object</span><span class="op">$</span><span class="va">m1_inclusion_matrix</span>,</span>
+<span>  eventdata <span class="op">=</span> <span class="va">m1_object</span><span class="op">$</span><span class="va">eventdata</span>,</span>
+<span>  n_threads <span class="op">=</span> <span class="fl">4</span>  <span class="co"># Uses C++ with OpenMP</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Perform feature selection for splicing events</span></span>
+<span><span class="va">m1_matrix</span> <span class="op">&lt;-</span> <span class="va">m1_object</span><span class="op">$</span><span class="va">m1_inclusion_matrix</span></span>
+<span><span class="va">HVE_Info</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/find_variable_events.html">find_variable_events</a></span><span class="op">(</span><span class="va">m1_matrix</span>, <span class="va">m2_matrix</span>, n_threads <span class="op">=</span> <span class="fl">32</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="key-features">Key Features<a class="anchor" aria-label="anchor" href="#key-features"></a>
+</h3>
+<ul>
+<li>
+<strong>High-performance C++ backend</strong>: Core computations use RcppArmadillo with OpenMP parallelization</li>
+<li>
+<strong>Memory-efficient sparse matrices</strong>: Handles large single-cell datasets</li>
+<li>
+<strong>Comprehensive validation</strong>: Input checking with informative error messages</li>
+<li>
+<strong>Flexible API</strong>: Choose between R6 methods or traditional functions</li>
+</ul>
+</div>
 </div>
 <div class="section level2">
-<h2 id="issues">
-<strong>Issues</strong><a class="anchor" aria-label="anchor" href="#issues"></a>
+<h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
 </h2>
-<p>If you encounter any issues or have suggestions, please <a href="https://github.com/Arshammik/splikit/issues/new" class="external-link">open an issue</a>.</p>
+<p>Full guides, examples, and tutorials are available at the <a href="https://csglab.github.io/splikit/" class="external-link">Splikit webpage</a></p>
+</div>
+<div class="section level2">
+<h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>
+</h2>
+<p>This project is licensed under the MIT License – see the <code>LICENSE.md</code> file for details.</p>
+</div>
+<div class="section level2">
+<h2 id="acknowledgment">Acknowledgment<a class="anchor" aria-label="anchor" href="#acknowledgment"></a>
+</h2>
+<p>The author is aware of the package’s limitations and potential breakpoints. It was developed under limited knowledge, time, and resources, and is provided with the hope that it will be useful. Feedback and contributions from the community are warmly welcomed. If you encounter any issues or have suggestions, please <a href="https://github.com/csglab/splikit/issues/new" class="external-link">open an issue</a>.</p>
 </div>
 
   </main><aside class="col-md-3"><div class="links">

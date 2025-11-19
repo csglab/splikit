@@ -6,11 +6,22 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Splikit Manual for Single-Cell Splicing Analysis • splikit</title>
+<!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="../favicon-96x96.png">
+<link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
+<link rel="icon" sizes="any" href="../favicon.ico">
+<link rel="manifest" href="../site.webmanifest">
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Splikit Manual for Single-Cell Splicing Analysis">
+<style>
+.template-home img[src*="logo.png"] {
+  max-height: 180px;
+  height: 180px;
+}
+</style>
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -20,7 +31,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">splikit</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">1.0.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -29,12 +40,12 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
+<li class="active nav-item"><a class="nav-link" href="../articles/splikit_manual.html">Manual</a></li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
-<li class="active nav-item dropdown">
-  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/splikit_manual.html">Splikit Manual for Single-Cell Splicing Analysis</a></li>
-    <li><a class="dropdown-item" href="../articles/STARsolo_guide.html">STARsolo Processing Guide for Splicing Analysis</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-guides" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Guides</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-guides">
+<li><a class="dropdown-item" href="../articles/STARsolo_guide.html">STARsolo Processing Guide</a></li>
   </ul>
 </li>
       </ul>
@@ -42,7 +53,7 @@
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
 </form></li>
-<li class="nav-item"><a class="external-link nav-link" href="https://github.com/Arshammik/splikit"><span class="fa fab fa-github fa-lg"></span></a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/Arshammik/splikit/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
       </ul>
 </div>
 
@@ -58,7 +69,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Splikit Manual for Single-Cell Splicing Analysis</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/Arshammik/splikit/blob/main/vignettes/splikit_manual.Rmd" class="external-link"><code>vignettes/splikit_manual.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/Arshammik/splikit/blob/HEAD/vignettes/splikit_manual.Rmd" class="external-link"><code>vignettes/splikit_manual.Rmd</code></a></small>
       <div class="d-none name"><code>splikit_manual.Rmd</code></div>
     </div>
 
@@ -75,6 +86,8 @@
 <li><a href="#installation">Installation</a></li>
 <li><a href="#core-concepts">Core Concepts</a></li>
 <li><a href="#getting-started">Getting Started</a></li>
+<li><a href="#r6-object-oriented-interface">R6 Object-Oriented
+Interface</a></li>
 <li><a href="#main-workflow-functions">Main Workflow Functions</a></li>
 <li><a href="#feature-selection-functions">Feature Selection
 Functions</a></li>
@@ -191,7 +204,7 @@ installed:</p>
 </h4>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Install from GitHub (replace with actual repository)</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"csglab/splikit"</span><span class="op">)</span></span>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"csglab/splikit"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Load the package</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://arshammik.github.io/splikit/">splikit</a></span><span class="op">)</span></span></code></pre></div>
@@ -200,10 +213,7 @@ installed:</p>
 <h4 id="verify-installation">Verify Installation<a class="anchor" aria-label="anchor" href="#verify-installation"></a>
 </h4>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Check if OpenMP is available for parallel processing</span></span>
-<span><span class="fu">check_openmp_enabled</span><span class="op">(</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Load example data to test functionality</span></span>
+<code class="sourceCode R"><span><span class="co"># Load example data to test functionality</span></span>
 <span><span class="va">toy_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/load_toy_SJ_object.html">load_toy_SJ_object</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">toy_data</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <hr>
@@ -311,6 +321,184 @@ events:</p>
 </div>
 </div>
 <div class="section level3">
+<h3 id="r6-object-oriented-interface">R6 Object-Oriented Interface<a class="anchor" aria-label="anchor" href="#r6-object-oriented-interface"></a>
+</h3>
+<p>Starting with version 2.0.0, splikit introduces a modern R6
+object-oriented interface through the <code>SplikitObject</code> class.
+This provides a more intuitive and streamlined workflow with method
+chaining support.</p>
+<div class="section level4">
+<h4 id="creating-a-splikitobject">Creating a SplikitObject<a class="anchor" aria-label="anchor" href="#creating-a-splikitobject"></a>
+</h4>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://arshammik.github.io/splikit/">splikit</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Load toy data for demonstration</span></span>
+<span><span class="va">toy_sj_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/load_toy_SJ_object.html">load_toy_SJ_object</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Create SplikitObject from junction abundance data</span></span>
+<span><span class="va">spl</span> <span class="op">&lt;-</span> <span class="va"><a href="../reference/SplikitObject.html">SplikitObject</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span>junction_ab_object <span class="op">=</span> <span class="va">toy_sj_data</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># View object summary</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">spl</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="complete-workflow-with-method-chaining">Complete Workflow with Method Chaining<a class="anchor" aria-label="anchor" href="#complete-workflow-with-method-chaining"></a>
+</h4>
+<p>The R6 interface supports method chaining for a clean, pipeline-style
+workflow:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Complete analysis pipeline with method chaining</span></span>
+<span><span class="va">spl</span> <span class="op">&lt;-</span> <span class="va"><a href="../reference/SplikitObject.html">SplikitObject</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span>junction_ab_object <span class="op">=</span> <span class="va">toy_sj_data</span><span class="op">)</span><span class="op">$</span></span>
+<span>  <span class="fu">makeM1</span><span class="op">(</span>min_counts <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">$</span></span>
+<span>  <span class="fu">makeM2</span><span class="op">(</span>n_threads <span class="op">=</span> <span class="fl">4</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span></span>
+<span>  <span class="fu">findVariableEvents</span><span class="op">(</span>min_row_sum <span class="op">=</span> <span class="fl">30</span>, n_threads <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Access results</span></span>
+<span><span class="va">m1_matrix</span> <span class="op">&lt;-</span> <span class="va">spl</span><span class="op">$</span><span class="va">m1</span></span>
+<span><span class="va">m2_matrix</span> <span class="op">&lt;-</span> <span class="va">spl</span><span class="op">$</span><span class="va">m2</span></span>
+<span><span class="va">variable_events</span> <span class="op">&lt;-</span> <span class="va">spl</span><span class="op">$</span><span class="va">variableEvents</span></span>
+<span><span class="va">event_data</span> <span class="op">&lt;-</span> <span class="va">spl</span><span class="op">$</span><span class="va">eventData</span></span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="step-by-step-workflow">Step-by-Step Workflow<a class="anchor" aria-label="anchor" href="#step-by-step-workflow"></a>
+</h4>
+<p>For more control, you can call methods individually:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Create object</span></span>
+<span><span class="va">spl</span> <span class="op">&lt;-</span> <span class="va"><a href="../reference/SplikitObject.html">SplikitObject</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span>junction_ab_object <span class="op">=</span> <span class="va">toy_sj_data</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Step 1: Create M1 matrix</span></span>
+<span><span class="va">spl</span><span class="op">$</span><span class="fu">makeM1</span><span class="op">(</span>min_counts <span class="op">=</span> <span class="fl">1</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">spl</span><span class="op">$</span><span class="va">m1</span><span class="op">)</span><span class="op">)</span>  <span class="co"># Check dimensions</span></span>
+<span></span>
+<span><span class="co"># Step 2: Create M2 matrix with multi-threading</span></span>
+<span><span class="va">spl</span><span class="op">$</span><span class="fu">makeM2</span><span class="op">(</span></span>
+<span>  n_threads <span class="op">=</span> <span class="fl">4</span>,           <span class="co"># Number of OpenMP threads</span></span>
+<span>  use_cpp <span class="op">=</span> <span class="cn">TRUE</span>,          <span class="co"># Use optimized C++ implementation</span></span>
+<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">spl</span><span class="op">$</span><span class="va">m2</span><span class="op">)</span><span class="op">)</span>  <span class="co"># Same dimensions as M1</span></span>
+<span></span>
+<span><span class="co"># Step 3: Find highly variable events</span></span>
+<span><span class="va">spl</span><span class="op">$</span><span class="fu">findVariableEvents</span><span class="op">(</span></span>
+<span>  min_row_sum <span class="op">=</span> <span class="fl">30</span>,</span>
+<span>  n_threads <span class="op">=</span> <span class="fl">4</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># View top variable events</span></span>
+<span><span class="va">top_events</span> <span class="op">&lt;-</span> <span class="va">spl</span><span class="op">$</span><span class="va">variableEvents</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="op">-</span><span class="va">sum_deviance</span><span class="op">)</span><span class="op">]</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">]</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">top_events</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="subsetting-splikitobjects">Subsetting SplikitObjects<a class="anchor" aria-label="anchor" href="#subsetting-splikitobjects"></a>
+</h4>
+<p>SplikitObjects support flexible subsetting by events, cells, or
+both:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Subset by events (rows)</span></span>
+<span><span class="va">top_100_events</span> <span class="op">&lt;-</span> <span class="va">spl</span><span class="op">$</span><span class="va">variableEvents</span><span class="op">$</span><span class="va">events</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">100</span><span class="op">]</span></span>
+<span><span class="va">spl_subset</span> <span class="op">&lt;-</span> <span class="va">spl</span><span class="op">$</span><span class="fu">subset</span><span class="op">(</span>events <span class="op">=</span> <span class="va">top_100_events</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Subset by cells (columns)</span></span>
+<span><span class="va">selected_cells</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">spl</span><span class="op">$</span><span class="va">m1</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">500</span><span class="op">]</span></span>
+<span><span class="va">spl_cells</span> <span class="op">&lt;-</span> <span class="va">spl</span><span class="op">$</span><span class="fu">subset</span><span class="op">(</span>cells <span class="op">=</span> <span class="va">selected_cells</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Subset both events and cells</span></span>
+<span><span class="va">spl_combined</span> <span class="op">&lt;-</span> <span class="va">spl</span><span class="op">$</span><span class="fu">subset</span><span class="op">(</span></span>
+<span>  events <span class="op">=</span> <span class="va">top_100_events</span>,</span>
+<span>  cells <span class="op">=</span> <span class="va">selected_cells</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Check dimensions</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">spl_subset</span><span class="op">$</span><span class="va">m1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">spl_cells</span><span class="op">$</span><span class="va">m1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">spl_combined</span><span class="op">$</span><span class="va">m1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="working-with-existing-matrices">Working with Existing Matrices<a class="anchor" aria-label="anchor" href="#working-with-existing-matrices"></a>
+</h4>
+<p>You can also create a SplikitObject from pre-computed matrices:</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Load pre-computed M1/M2 data</span></span>
+<span><span class="va">toy_m1m2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/load_toy_M1_M2_object.html">load_toy_M1_M2_object</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Create SplikitObject from existing matrices</span></span>
+<span><span class="va">spl</span> <span class="op">&lt;-</span> <span class="va"><a href="../reference/SplikitObject.html">SplikitObject</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span></span>
+<span>  m1_matrix <span class="op">=</span> <span class="va">toy_m1m2</span><span class="op">$</span><span class="va">m1</span>,</span>
+<span>  m2_matrix <span class="op">=</span> <span class="va">toy_m1m2</span><span class="op">$</span><span class="va">m2</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Directly find variable events (M1 and M2 already computed)</span></span>
+<span><span class="va">spl</span><span class="op">$</span><span class="fu">findVariableEvents</span><span class="op">(</span>min_row_sum <span class="op">=</span> <span class="fl">50</span>, n_threads <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="accessing-splikitobject-fields">Accessing SplikitObject Fields<a class="anchor" aria-label="anchor" href="#accessing-splikitobject-fields"></a>
+</h4>
+<p>The SplikitObject provides access to all data through fields:</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Core matrices</span></span>
+<span><span class="va">spl</span><span class="op">$</span><span class="va">m1</span>              <span class="co"># Inclusion matrix (events × cells)</span></span>
+<span><span class="va">spl</span><span class="op">$</span><span class="va">m2</span>              <span class="co"># Exclusion matrix (events × cells)</span></span>
+<span></span>
+<span><span class="co"># Metadata</span></span>
+<span><span class="va">spl</span><span class="op">$</span><span class="va">eventData</span>       <span class="co"># Event metadata data.table</span></span>
+<span><span class="va">spl</span><span class="op">$</span><span class="va">variableEvents</span>  <span class="co"># Variable events results</span></span>
+<span></span>
+<span><span class="co"># Original data</span></span>
+<span><span class="va">spl</span><span class="op">$</span><span class="va">junctionAbObject</span>  <span class="co"># Raw junction abundance data</span></span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="r6-vs-function-based-interface-comparison">R6 vs Function-Based Interface Comparison<a class="anchor" aria-label="anchor" href="#r6-vs-function-based-interface-comparison"></a>
+</h4>
+<p>Both interfaces produce identical results. Choose based on your
+workflow preference:</p>
+<p><strong>R6 Interface</strong> (recommended for new users):</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">spl</span> <span class="op">&lt;-</span> <span class="va"><a href="../reference/SplikitObject.html">SplikitObject</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span>junction_ab_object <span class="op">=</span> <span class="va">toy_sj_data</span><span class="op">)</span><span class="op">$</span></span>
+<span>  <span class="fu">makeM1</span><span class="op">(</span>min_counts <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">$</span></span>
+<span>  <span class="fu">makeM2</span><span class="op">(</span>n_threads <span class="op">=</span> <span class="fl">4</span><span class="op">)</span><span class="op">$</span></span>
+<span>  <span class="fu">findVariableEvents</span><span class="op">(</span>min_row_sum <span class="op">=</span> <span class="fl">30</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">m1</span> <span class="op">&lt;-</span> <span class="va">spl</span><span class="op">$</span><span class="va">m1</span></span>
+<span><span class="va">m2</span> <span class="op">&lt;-</span> <span class="va">spl</span><span class="op">$</span><span class="va">m2</span></span>
+<span><span class="va">hve</span> <span class="op">&lt;-</span> <span class="va">spl</span><span class="op">$</span><span class="va">variableEvents</span></span></code></pre></div>
+<p><strong>Function-Based Interface</strong> (traditional):</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">m1_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/make_m1.html">make_m1</a></span><span class="op">(</span><span class="va">toy_sj_data</span>, min_counts <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">m2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/make_m2.html">make_m2</a></span><span class="op">(</span><span class="va">m1_result</span><span class="op">$</span><span class="va">m1_inclusion_matrix</span>, <span class="va">m1_result</span><span class="op">$</span><span class="va">event_data</span>, n_threads <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span>
+<span><span class="va">hve</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/find_variable_events.html">find_variable_events</a></span><span class="op">(</span><span class="va">m1_result</span><span class="op">$</span><span class="va">m1_inclusion_matrix</span>, <span class="va">m2</span>, min_row_sum <span class="op">=</span> <span class="fl">30</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="performance-features">Performance Features<a class="anchor" aria-label="anchor" href="#performance-features"></a>
+</h4>
+<p>The SplikitObject methods support the same performance optimizations
+as the underlying functions:</p>
+<ul>
+<li>
+<strong>Multi-threading</strong>: Set <code>n_threads</code>
+parameter for OpenMP parallelization</li>
+<li>
+<strong>Memory-efficient M2</strong>: Version 2.0.0 includes a
+completely rewritten <code>make_m2</code> implementation with ~30x
+memory reduction</li>
+<li>
+<strong>C++ optimization</strong>: Set <code>use_cpp = TRUE</code>
+(default) for maximum performance</li>
+</ul>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Check if OpenMP is available</span></span>
+<span><span class="fu">check_openmp_enabled</span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Use all available cores for large datasets</span></span>
+<span><span class="va">n_cores</span> <span class="op">&lt;-</span> <span class="fu">parallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">detectCores</a></span><span class="op">(</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span></span>
+<span></span>
+<span><span class="va">spl</span><span class="op">$</span><span class="fu">makeM2</span><span class="op">(</span>n_threads <span class="op">=</span> <span class="va">n_cores</span>, use_cpp <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">spl</span><span class="op">$</span><span class="fu">findVariableEvents</span><span class="op">(</span>n_threads <span class="op">=</span> <span class="va">n_cores</span>, min_row_sum <span class="op">=</span> <span class="fl">50</span><span class="op">)</span></span></code></pre></div>
+<hr>
+</div>
+</div>
+<div class="section level3">
 <h3 id="main-workflow-functions">Main Workflow Functions<a class="anchor" aria-label="anchor" href="#main-workflow-functions"></a>
 </h3>
 <div class="section level4">
@@ -320,7 +508,7 @@ events:</p>
 <p><strong>Purpose</strong>: Processes STARsolo splicing junction output
 into structured R objects.</p>
 <p><strong>Function Signature</strong>:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/make_junction_ab.html">make_junction_ab</a></span><span class="op">(</span><span class="va">STARsolo_SJ_dirs</span>, white_barcode_lists <span class="op">=</span> <span class="cn">NULL</span>, </span>
 <span>                 <span class="va">sample_ids</span>, use_internal_whitelist <span class="op">=</span> <span class="cn">TRUE</span>, </span>
 <span>                 verbose <span class="op">=</span> <span class="cn">FALSE</span>, keep_multi_mapped_junctions <span class="op">=</span> <span class="cn">FALSE</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
@@ -362,7 +550,7 @@ junction metadata (chromosome, coordinates, strand) -
 <code>junction_ab</code>: Sparse matrix of junction abundances
 (junctions × cells)</p>
 <p><strong>Example</strong>:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Single sample processing</span></span>
 <span><span class="va">sj_dirs</span> <span class="op">&lt;-</span> <span class="st">"/path/to/STARsolo/output/SJ"</span></span>
 <span><span class="va">sample_names</span> <span class="op">&lt;-</span> <span class="st">"Sample1"</span></span>
@@ -402,7 +590,7 @@ each junction: - <code>chr</code>, <code>start</code>, <code>end</code>,
 <p><strong>Purpose</strong>: Transforms junction abundance data into the
 inclusion matrix (M1) with coordinate-based grouping.</p>
 <p><strong>Function Signature</strong>:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/make_m1.html">make_m1</a></span><span class="op">(</span><span class="va">junction_ab_object</span>, min_counts <span class="op">=</span> <span class="fl">1</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <p><strong>Parameters</strong>: - <code>junction_ab_object</code>:
 Output from <code><a href="../reference/make_junction_ab.html">make_junction_ab()</a></code> - <code>min_counts</code>:
@@ -430,7 +618,7 @@ or “_E” (end) suffixes</li>
 matrix with expanded events based on coordinate groups -
 <code>event_data</code>: Enhanced metadata with group information</p>
 <p><strong>Example</strong>:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Process junction data into M1 matrix</span></span>
 <span><span class="va">m1_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/make_m1.html">make_m1</a></span><span class="op">(</span><span class="va">junction_data</span><span class="op">)</span></span>
 <span></span>
@@ -455,10 +643,11 @@ coordinate groups</p>
 <p><strong>Purpose</strong>: Creates the exclusion matrix (M2) from the
 M1 matrix and event data with intelligent memory management.</p>
 <p><strong>Function Signature</strong>:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/make_m2.html">make_m2</a></span><span class="op">(</span><span class="va">m1_inclusion_matrix</span>, <span class="va">eventdata</span>, batch_size <span class="op">=</span> <span class="fl">5000</span>, </span>
-<span>        memory_threshold <span class="op">=</span> <span class="fl">2e9</span>, force_fast <span class="op">=</span> <span class="cn">FALSE</span>, </span>
-<span>        multi_thread <span class="op">=</span> <span class="cn">FALSE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/make_m2.html">make_m2</a></span><span class="op">(</span><span class="va">m1_inclusion_matrix</span>, <span class="va">eventdata</span>, batch_size <span class="op">=</span> <span class="fl">5000</span>,</span>
+<span>        memory_threshold <span class="op">=</span> <span class="fl">2e9</span>, force_fast <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>        multi_thread <span class="op">=</span> <span class="cn">FALSE</span>, n_threads <span class="op">=</span> <span class="fl">1</span>, use_cpp <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>        verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <p><strong>Parameters</strong>: - <code>m1_inclusion_matrix</code>:
 Output from <code><a href="../reference/make_m1.html">make_m1()</a></code> - <code>eventdata</code>: Event
 metadata from <code><a href="../reference/make_m1.html">make_m1()</a></code> - <code>batch_size</code>: Number
@@ -467,8 +656,18 @@ of groups to process per batch when using batched mode (default 5000) -
 processing (default 2e9) - <code>force_fast</code>: Force fast
 processing regardless of memory estimates (default FALSE) -
 <code>multi_thread</code>: Enable parallel processing for batched
-operations (default FALSE) - <code>verbose</code>: Logical for detailed
-progress reporting (default FALSE)</p>
+operations (default FALSE) - <code>n_threads</code>: Number of OpenMP
+threads for C++ implementation (default 1) - <code>use_cpp</code>: Use
+optimized C++ implementation (default TRUE, recommended) -
+<code>verbose</code>: Logical for detailed progress reporting (default
+FALSE)</p>
+<p><strong>Performance Notes (v2.0.0)</strong>: The C++ implementation
+has been completely rewritten for version 2.0.0 with significant
+improvements: - <strong>~8x faster execution</strong> through two-pass
+CSC format construction - <strong>~30x lower memory usage</strong> by
+eliminating intermediate dense matrices - Memory usage now scales with
+output size only: O(nnz_output) + O(n_groups) - Previous versions used
+O(n_groups × n_cells) for intermediate storage</p>
 <p><strong>The Exclusion Calculation Logic</strong>:</p>
 <p>For each coordinate group, M2 values are calculated as:</p>
 <pre><code><span><span class="va">M2</span><span class="op">[</span><span class="va">event</span>, <span class="va">cell</span><span class="op">]</span> <span class="op">=</span> <span class="va">Total_Group_Activity</span><span class="op">[</span><span class="va">group</span>, <span class="va">cell</span><span class="op">]</span> <span class="op">-</span> <span class="va">M1</span><span class="op">[</span><span class="va">event</span>, <span class="va">cell</span><span class="op">]</span></span></code></pre>
@@ -477,7 +676,7 @@ across group members 2. For each individual event, subtract its
 inclusion reads from the group total 3. The remainder represents
 “exclusion” evidence for that specific event</p>
 <p><strong>Example</strong>:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Create M2 matrix</span></span>
 <span><span class="va">m2_matrix</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/make_m2.html">make_m2</a></span><span class="op">(</span><span class="va">m1_result</span><span class="op">$</span><span class="va">m1_inclusion_matrix</span>, <span class="va">m1_result</span><span class="op">$</span><span class="va">event_data</span><span class="op">)</span></span>
 <span></span>
@@ -507,7 +706,7 @@ coordinate group</li>
 </h5>
 <p><strong>Purpose</strong>: Processes standard gene expression matrices
 alongside splicing data.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">gene_expression</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/make_gene_count.html">make_gene_count</a></span><span class="op">(</span></span>
 <span>  expression_dirs <span class="op">=</span> <span class="st">"/path/to/10X/output"</span>,</span>
 <span>  sample_ids <span class="op">=</span> <span class="st">"Sample1"</span>,</span>
@@ -520,7 +719,7 @@ alongside splicing data.</p>
 </h5>
 <p><strong>Purpose</strong>: Processes spliced/unspliced matrices for
 RNA velocity analysis.</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">velocity_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/make_velo_count.html">make_velo_count</a></span><span class="op">(</span></span>
 <span>  velocyto_dirs <span class="op">=</span> <span class="st">"/path/to/velocyto/output"</span>,</span>
 <span>  sample_ids <span class="op">=</span> <span class="st">"Sample1"</span>,</span>
@@ -540,7 +739,7 @@ RNA velocity analysis.</p>
 <p><strong>Purpose</strong>: Identifies highly variable splicing events
 using deviance-based statistics.</p>
 <p><strong>Function Signature</strong>:</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/find_variable_events.html">find_variable_events</a></span><span class="op">(</span><span class="va">m1_matrix</span>, <span class="va">m2_matrix</span>, min_row_sum <span class="op">=</span> <span class="fl">50</span>, </span>
 <span>                     n_threads <span class="op">=</span> <span class="fl">1</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
 <p><strong>Parameters</strong>: - <code>m1_matrix</code>,
@@ -569,7 +768,7 @@ libraries</li>
 <code>events</code>: Event identifiers - <code>sum_deviance</code>:
 Combined deviance score across all libraries</p>
 <p><strong>Example</strong>:</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Load toy data</span></span>
 <span><span class="va">toy_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/load_toy_M1_M2_object.html">load_toy_M1_M2_object</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">m1_matrix</span> <span class="op">&lt;-</span> <span class="va">toy_data</span><span class="op">$</span><span class="va">m1</span></span>
@@ -606,7 +805,7 @@ splicing behavior</li>
 <p><strong>Purpose</strong>: Identifies highly variable genes using
 either variance stabilization or deviance methods.</p>
 <p><strong>Function Signature</strong>:</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/find_variable_genes.html">find_variable_genes</a></span><span class="op">(</span><span class="va">gene_expression_matrix</span>, method <span class="op">=</span> <span class="st">"vst"</span>, </span>
 <span>                   n_threads <span class="op">=</span> <span class="fl">1</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
 <p><strong>Parameters</strong>: - <code>gene_expression_matrix</code>:
@@ -623,7 +822,7 @@ Good for identifying highly expressed variable genes</p>
 approach - Models gene expression using negative binomial deviances -
 Better for lowly expressed genes</p>
 <p><strong>Example</strong>:</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Using toy gene expression data</span></span>
 <span><span class="va">toy_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/load_toy_M1_M2_object.html">load_toy_M1_M2_object</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">gene_expr</span> <span class="op">&lt;-</span> <span class="va">toy_data</span><span class="op">$</span><span class="va">gene_expression</span></span>
@@ -651,7 +850,7 @@ Better for lowly expressed genes</p>
 <p><strong>Purpose</strong>: Computes pseudo-R² correlation between
 external data and splicing behavior using beta-binomial modeling.</p>
 <p><strong>Function Signature</strong>:</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_pseudo_correlation.html">get_pseudo_correlation</a></span><span class="op">(</span><span class="va">ZDB_matrix</span>, <span class="va">m1_inclusion</span>, <span class="va">m2_exclusion</span>, </span>
 <span>                      metric <span class="op">=</span> <span class="st">"CoxSnell"</span>, suppress_warnings <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p><strong>Parameters</strong>: - <code>ZDB_matrix</code>: External data
@@ -664,7 +863,7 @@ Whether to suppress computational warnings</p>
 expression - Identifying splicing events that respond to external
 stimuli - Validating splicing predictions against protein data</p>
 <p><strong>Example</strong>:</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Create example data</span></span>
 <span><span class="va">toy_sj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/load_toy_SJ_object.html">load_toy_SJ_object</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">m1_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/make_m1.html">make_m1</a></span><span class="op">(</span><span class="va">toy_sj</span><span class="op">)</span></span>
@@ -698,10 +897,10 @@ stimuli - Validating splicing predictions against protein data</p>
 <p><strong>Purpose</strong>: Efficiently computes row-wise variance for
 dense or sparse matrices.</p>
 <p><strong>Function Signature</strong>:</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_rowVar.html">get_rowVar</a></span><span class="op">(</span><span class="va">M</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <p><strong>Example</strong>:</p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Dense matrix</span></span>
 <span><span class="va">dense_mat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">1000</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
 <span><span class="va">var_dense</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_rowVar.html">get_rowVar</a></span><span class="op">(</span><span class="va">dense_mat</span><span class="op">)</span></span>
@@ -722,10 +921,10 @@ dense or sparse matrices.</p>
 <p><strong>Purpose</strong>: Computes average silhouette width for
 clustering evaluation.</p>
 <p><strong>Function Signature</strong>:</p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_silhouette_mean.html">get_silhouette_mean</a></span><span class="op">(</span><span class="va">X</span>, <span class="va">cluster_assignments</span>, n_threads <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
 <p><strong>Example</strong>:</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Create example clustering data</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
 <span><span class="va">pc_matrix</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">1000</span> <span class="op">*</span> <span class="fl">15</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">1000</span>, ncol <span class="op">=</span> <span class="fl">15</span><span class="op">)</span></span>
@@ -747,7 +946,7 @@ workflow:</p>
 <div class="section level4">
 <h4 id="scenario-analyzing-cell-type-specific-splicing">Scenario: Analyzing Cell Type-Specific Splicing<a class="anchor" aria-label="anchor" href="#scenario-analyzing-cell-type-specific-splicing"></a>
 </h4>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://arshammik.github.io/splikit/">splikit</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://Matrix.R-forge.R-project.org" class="external-link">Matrix</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://r-datatable.com" class="external-link">data.table</a></span><span class="op">)</span></span>
@@ -854,7 +1053,7 @@ workflow:</p>
 <div class="section level4">
 <h4 id="advanced-workflow-multi-sample-comparison">Advanced Workflow: Multi-sample Comparison<a class="anchor" aria-label="anchor" href="#advanced-workflow-multi-sample-comparison"></a>
 </h4>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Simulate multi-sample analysis</span></span>
 <span><span class="va">analyze_multi_sample</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"=== Multi-Sample Splicing Analysis ===\n"</span><span class="op">)</span></span>
@@ -932,7 +1131,7 @@ workflow:</p>
 </h5>
 <p>Splikit supports parallel processing through OpenMP for
 computationally intensive functions:</p>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Check OpenMP availability</span></span>
 <span><span class="va">openmp_available</span> <span class="op">&lt;-</span> <span class="fu">check_openmp_enabled</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"OpenMP enabled:"</span>, <span class="va">openmp_available</span><span class="op">)</span><span class="op">)</span></span>
@@ -951,7 +1150,7 @@ computationally intensive functions:</p>
 <h5 id="memory-management">Memory Management<a class="anchor" aria-label="anchor" href="#memory-management"></a>
 </h5>
 <p>For large datasets, consider these strategies:</p>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Process data in chunks for very large matrices</span></span>
 <span><span class="va">process_large_dataset</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">m1_matrix</span>, <span class="va">m2_matrix</span>, <span class="va">chunk_size</span> <span class="op">=</span> <span class="fl">1000</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">n_events</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">m1_matrix</span><span class="op">)</span></span>
@@ -979,7 +1178,7 @@ computationally intensive functions:</p>
 <div class="section level5">
 <h5 id="seurat-integration">Seurat Integration<a class="anchor" aria-label="anchor" href="#seurat-integration"></a>
 </h5>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://satijalab.org/seurat" class="external-link">Seurat</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Create Seurat object with splicing data</span></span>
@@ -989,15 +1188,15 @@ computationally intensive functions:</p>
 <span>  <span class="va">psi_matrix</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/is.finite.html" class="external-link">is.nan</a></span><span class="op">(</span><span class="va">psi_matrix</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
 <span>  </span>
 <span>  <span class="co"># Create Seurat object</span></span>
-<span>  <span class="va">seurat_obj</span> <span class="op">&lt;-</span> <span class="fu">CreateSeuratObject</span><span class="op">(</span></span>
+<span>  <span class="va">seurat_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/CreateSeuratObject.html" class="external-link">CreateSeuratObject</a></span><span class="op">(</span></span>
 <span>    counts <span class="op">=</span> <span class="va">psi_matrix</span>,</span>
 <span>    project <span class="op">=</span> <span class="st">"SplicingAnalysis"</span>,</span>
 <span>    meta.data <span class="op">=</span> <span class="va">metadata</span></span>
 <span>  <span class="op">)</span></span>
 <span>  </span>
 <span>  <span class="co"># Add M1 and M2 as additional assays</span></span>
-<span>  <span class="va">seurat_obj</span><span class="op">[[</span><span class="st">"M1"</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu">CreateAssayObject</span><span class="op">(</span>counts <span class="op">=</span> <span class="va">m1_matrix</span><span class="op">)</span></span>
-<span>  <span class="va">seurat_obj</span><span class="op">[[</span><span class="st">"M2"</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu">CreateAssayObject</span><span class="op">(</span>counts <span class="op">=</span> <span class="va">m2_matrix</span><span class="op">)</span></span>
+<span>  <span class="va">seurat_obj</span><span class="op">[[</span><span class="st">"M1"</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/CreateAssayObject.html" class="external-link">CreateAssayObject</a></span><span class="op">(</span>counts <span class="op">=</span> <span class="va">m1_matrix</span><span class="op">)</span></span>
+<span>  <span class="va">seurat_obj</span><span class="op">[[</span><span class="st">"M2"</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/CreateAssayObject.html" class="external-link">CreateAssayObject</a></span><span class="op">(</span>counts <span class="op">=</span> <span class="va">m2_matrix</span><span class="op">)</span></span>
 <span>  </span>
 <span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="va">seurat_obj</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
@@ -1005,30 +1204,30 @@ computationally intensive functions:</p>
 <div class="section level5">
 <h5 id="singlecellexperiment-integration">SingleCellExperiment Integration<a class="anchor" aria-label="anchor" href="#singlecellexperiment-integration"></a>
 </h5>
-<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">SingleCellExperiment</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Create SCE object with multiple modalities</span></span>
 <span><span class="va">create_splicing_sce</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">gene_expr</span>, <span class="va">m1_matrix</span>, <span class="va">m2_matrix</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="co"># Ensure consistent cell names</span></span>
-<span>  <span class="va">common_cells</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">intersect</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">gene_expr</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">m1_matrix</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="va">common_cells</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/setops.html" class="external-link">intersect</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">gene_expr</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">m1_matrix</span><span class="op">)</span><span class="op">)</span></span>
 <span>  </span>
 <span>  <span class="va">gene_expr</span> <span class="op">&lt;-</span> <span class="va">gene_expr</span><span class="op">[</span>, <span class="va">common_cells</span><span class="op">]</span></span>
 <span>  <span class="va">m1_matrix</span> <span class="op">&lt;-</span> <span class="va">m1_matrix</span><span class="op">[</span>, <span class="va">common_cells</span><span class="op">]</span></span>
 <span>  <span class="va">m2_matrix</span> <span class="op">&lt;-</span> <span class="va">m2_matrix</span><span class="op">[</span>, <span class="va">common_cells</span><span class="op">]</span></span>
 <span>  </span>
 <span>  <span class="co"># Create main SCE object with gene expression</span></span>
-<span>  <span class="va">sce</span> <span class="op">&lt;-</span> <span class="fu">SingleCellExperiment</span><span class="op">(</span></span>
+<span>  <span class="va">sce</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/SingleCellExperiment/man/SingleCellExperiment.html" class="external-link">SingleCellExperiment</a></span><span class="op">(</span></span>
 <span>    assays <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>counts <span class="op">=</span> <span class="va">gene_expr</span><span class="op">)</span>,</span>
 <span>    colData <span class="op">=</span> <span class="fu">DataFrame</span><span class="op">(</span>cell_id <span class="op">=</span> <span class="va">common_cells</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
 <span>  </span>
 <span>  <span class="co"># Add splicing information as alternative experiments</span></span>
-<span>  <span class="va">splicing_sce</span> <span class="op">&lt;-</span> <span class="fu">SingleCellExperiment</span><span class="op">(</span></span>
+<span>  <span class="va">splicing_sce</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/SingleCellExperiment/man/SingleCellExperiment.html" class="external-link">SingleCellExperiment</a></span><span class="op">(</span></span>
 <span>    assays <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>inclusion <span class="op">=</span> <span class="va">m1_matrix</span>, exclusion <span class="op">=</span> <span class="va">m2_matrix</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
 <span>  </span>
-<span>  <span class="fu">altExp</span><span class="op">(</span><span class="va">sce</span>, <span class="st">"splicing"</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">splicing_sce</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/pkg/SingleCellExperiment/man/altExps.html" class="external-link">altExp</a></span><span class="op">(</span><span class="va">sce</span>, <span class="st">"splicing"</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">splicing_sce</span></span>
 <span>  </span>
 <span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="va">sce</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
@@ -1040,7 +1239,7 @@ computationally intensive functions:</p>
 <div class="section level5">
 <h5 id="differential-splicing-analysis">Differential Splicing Analysis<a class="anchor" aria-label="anchor" href="#differential-splicing-analysis"></a>
 </h5>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Function to identify differentially spliced events between conditions</span></span>
 <span><span class="va">find_differential_splicing</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">m1_matrix</span>, <span class="va">m2_matrix</span>, <span class="va">cell_groups</span>, </span>
 <span>                                     <span class="va">group1</span>, <span class="va">group2</span>, <span class="va">min_cells</span> <span class="op">=</span> <span class="fl">10</span><span class="op">)</span> <span class="op">{</span></span>
@@ -1107,7 +1306,7 @@ computationally intensive functions:</p>
 <p><strong>Symptom</strong>: R crashes or reports “cannot allocate
 vector of size X”</p>
 <p><strong>Solutions</strong>:</p>
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># 1. Increase memory limit (Windows)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/memory.size.html" class="external-link">memory.limit</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">8000</span><span class="op">)</span>  <span class="co"># 8GB</span></span>
 <span></span>
@@ -1130,7 +1329,7 @@ vector of size X”</p>
 <p><strong>Symptom</strong>: “No abundance matrix found” or similar file
 not found errors</p>
 <p><strong>Solution</strong>:</p>
-<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Verify directory structure</span></span>
 <span><span class="va">check_starsolo_structure</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">starsolo_dir</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">required_files</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
@@ -1160,7 +1359,7 @@ not found errors</p>
 <p><strong>Symptom</strong>: “All barcodes were removed after
 trimming”</p>
 <p><strong>Solutions</strong>:</p>
-<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># 1. Examine barcode formats</span></span>
 <span><span class="va">raw_barcodes</span> <span class="op">&lt;-</span> <span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://rdatatable.gitlab.io/data.table/reference/fread.html" class="external-link">fread</a></span><span class="op">(</span><span class="st">"raw/barcodes.tsv"</span>, header <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">V1</span></span>
 <span><span class="va">filter_barcodes</span> <span class="op">&lt;-</span> <span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://rdatatable.gitlab.io/data.table/reference/fread.html" class="external-link">fread</a></span><span class="op">(</span><span class="st">"filtered/barcodes.tsv"</span>, header <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">V1</span></span>
@@ -1186,7 +1385,7 @@ trimming”</p>
 </h5>
 <p><strong>Symptom</strong>: Very few variable events identified</p>
 <p><strong>Solutions</strong>:</p>
-<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># 1. Lower minimum row sum threshold</span></span>
 <span><span class="va">variable_events</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/find_variable_events.html">find_variable_events</a></span><span class="op">(</span></span>
 <span>  <span class="va">m1_matrix</span>, <span class="va">m2_matrix</span>,</span>
@@ -1209,7 +1408,7 @@ trimming”</p>
 <div class="section level4">
 <h4 id="performance-benchmarking">Performance Benchmarking<a class="anchor" aria-label="anchor" href="#performance-benchmarking"></a>
 </h4>
-<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Function to benchmark splikit performance</span></span>
 <span><span class="va">benchmark_splikit</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">m1_matrix</span>, <span class="va">m2_matrix</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/joshuaulrich/microbenchmark/" class="external-link">microbenchmark</a></span><span class="op">)</span></span>
@@ -1447,7 +1646,7 @@ analysis frameworks</li>
 documentation and GitHub repository. The splikit development team
 welcomes feedback and contributions from the community.</p>
 <hr>
-<p><em>This manual was generated for splikit version 1.0.5 For the most
+<p><em>This manual was generated for splikit version 2.0.0. For the most
 up-to-date information, please refer to the package documentation and
 vignettes.</em></p>
 </div>
