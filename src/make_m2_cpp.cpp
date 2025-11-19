@@ -44,17 +44,9 @@ arma::sp_mat make_m2_cpp(const arma::sp_mat& M1,
   }
   int n_groups = max_group + 1;
 
-  Rcout << "Computing M2 matrix (C++ implementation)\n";
-  Rcout << "  Events: " << n_events << ", Cells: " << n_cells << ", Groups: " << n_groups << "\n";
-
 #ifdef _OPENMP
   if (n_threads > 1) {
     omp_set_num_threads(n_threads);
-    Rcout << "  Using " << n_threads << " OpenMP threads\n";
-  }
-#else
-  if (n_threads > 1) {
-    Rcout << "  OpenMP not available, running single-threaded\n";
   }
 #endif
 
@@ -80,8 +72,6 @@ arma::sp_mat make_m2_cpp(const arma::sp_mat& M1,
     int g = group_ids[row];
     group_sums(g, col) += val;
   }
-
-  Rcout << "  Group sums computed\n";
 
   // Step 3: Build M2 matrix
   // For efficiency, we'll build triplets and construct sparse matrix
@@ -141,8 +131,6 @@ arma::sp_mat make_m2_cpp(const arma::sp_mat& M1,
     }
   }
 
-  Rcout << "  Triplets computed: " << values.size() << " non-zeros\n";
-
   // Construct sparse matrix from triplets
   arma::umat locations(2, values.size());
   arma::vec vals(values.size());
@@ -154,8 +142,6 @@ arma::sp_mat make_m2_cpp(const arma::sp_mat& M1,
   }
 
   arma::sp_mat M2(locations, vals, n_events, n_cells);
-
-  Rcout << "  M2 matrix constructed\n";
 
   return M2;
 }
@@ -195,17 +181,9 @@ arma::sp_mat make_m2_cpp_parallel(const arma::sp_mat& M1,
   }
   int n_groups = max_group + 1;
 
-  Rcout << "Computing M2 matrix (C++ parallel implementation)\n";
-  Rcout << "  Events: " << n_events << ", Cells: " << n_cells << ", Groups: " << n_groups << "\n";
-
 #ifdef _OPENMP
   if (n_threads > 1) {
     omp_set_num_threads(n_threads);
-    Rcout << "  Using " << n_threads << " OpenMP threads\n";
-  }
-#else
-  if (n_threads > 1) {
-    Rcout << "  OpenMP not available, running single-threaded\n";
   }
 #endif
 
@@ -261,8 +239,6 @@ arma::sp_mat make_m2_cpp_parallel(const arma::sp_mat& M1,
     total_nnz += all_vals[j].size();
   }
 
-  Rcout << "  Triplets computed: " << total_nnz << " non-zeros\n";
-
   // Merge all triplets
   arma::umat locations(2, total_nnz);
   arma::vec vals(total_nnz);
@@ -278,8 +254,6 @@ arma::sp_mat make_m2_cpp_parallel(const arma::sp_mat& M1,
   }
 
   arma::sp_mat M2(locations, vals, n_events, n_cells);
-
-  Rcout << "  M2 matrix constructed\n";
 
   return M2;
 }

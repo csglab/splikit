@@ -389,3 +389,251 @@ test_that("Backward compatibility: old functions still work", {
   expect_true("events" %in% names(hve))
   expect_true("sum_deviance" %in% names(hve))
 })
+
+# ============================================================================
+# Edge Case Tests (from deep analysis Issue #1)
+# ============================================================================
+
+test_that("rowVariance_cpp handles integer matrices", {
+  # Issue #16 from deep analysis
+  m_int <- matrix(1:20, nrow = 4)
+  m_num <- matrix(as.numeric(1:20), nrow = 4)
+
+  result_int <- rowVariance_cpp(m_int)
+  result_num <- rowVariance_cpp(m_num)
+
+  expect_equal(result_int, result_num)
+})
+
+test_that("rowVariance_cpp handles all-zero sparse matrix", {
+  m <- Matrix::Matrix(0, nrow = 10, ncol = 5, sparse = TRUE)
+  result <- rowVariance_cpp(m)
+
+  expect_equal(length(result), 10)
+  expect_true(all(result == 0))
+})
+
+test_that("get_pseudo_correlation catches dimension mismatches", {
+  # Issue #14 from deep analysis
+  skip_if_not_installed("Matrix")
+
+  test_data <- readRDS("../../../test_splikit.rds")
+
+  m2 <- make_m2(
+    m1_inclusion_matrix = test_data$m1,
+    eventdata = test_data$eventdata,
+    verbose = FALSE
+  )
+
+  # Wrong row dimension
+  bad_zdb <- matrix(rnorm(100 * ncol(test_data$m1)), nrow = 100, ncol = ncol(test_data$m1))
+
+  expect_error(
+    get_pseudo_correlation(bad_zdb, test_data$m1, m2),
+    "same number of rows"
+  )
+})
+
+test_that("find_variable_events handles very high threshold gracefully", {
+  # Issue #23 from deep analysis
+  test_data <- readRDS("../../../test_splikit.rds")
+
+  m2 <- make_m2(
+    m1_inclusion_matrix = test_data$m1,
+    eventdata = test_data$eventdata,
+    verbose = FALSE
+  )
+
+  # Threshold so high no events pass
+  expect_error(
+    find_variable_events(test_data$m1, m2, min_row_sum = 1e9, verbose = FALSE),
+    "No events pass"
+  )
+})
+
+test_that("SplikitObject validates negative threshold", {
+  test_data <- readRDS("../../../test_splikit.rds")
+
+  m2 <- make_m2(
+    m1_inclusion_matrix = test_data$m1,
+    eventdata = test_data$eventdata,
+    verbose = FALSE
+  )
+
+  obj <- SplikitObject$new(
+    m1 = test_data$m1,
+    m2 = m2,
+    eventData = test_data$eventdata
+  )
+
+  # Negative threshold should still work (all events pass)
+  result <- obj$findVariableEvents(min_row_sum = -1, verbose = FALSE)
+  expect_true(nrow(result) > 0)
+})
+
+test_that("SplikitObject handles subset by names", {
+  test_data <- readRDS("../../../test_splikit.rds")
+
+  obj <- SplikitObject$new(
+    m1 = test_data$m1,
+    eventData = test_data$eventdata
+  )
+
+  # Get first 10 event names
+  event_names <- rownames(obj$m1)[1:10]
+
+  obj$subset(events = event_names)
+
+  expect_equal(nrow(obj$m1), 10)
+  expect_equal(rownames(obj$m1), event_names)
+})
+
+test_that("SplikitObject subset warns about missing names", {
+  test_data <- readRDS("../../../test_splikit.rds")
+
+  obj <- SplikitObject$new(
+    m1 = test_data$m1,
+    eventData = test_data$eventdata
+  )
+
+  # Mix of valid and invalid names
+  mixed_names <- c(rownames(obj$m1)[1:5], "nonexistent_event_1", "nonexistent_event_2")
+
+  expect_warning(
+    obj$subset(events = mixed_names),
+    "not found"
+  )
+
+  expect_equal(nrow(obj$m1), 5)
+})
+
+test_that("SplikitObject handles single event subset", {
+  test_data <- readRDS("../../../test_splikit.rds")
+
+  obj <- SplikitObject$new(
+    m1 = test_data$m1,
+    eventData = test_data$eventdata
+  )
+
+  obj$subset(events = 1)
+
+  expect_equal(nrow(obj$m1), 1)
+  expect_equal(nrow(obj$eventData), 1)
+})
+
+test_that("SplikitObject handles single cell subset", {
+  test_data <- readRDS("../../../test_splikit.rds")
+
+  obj <- SplikitObject$new(
+    m1 = test_data$m1,
+    eventData = test_data$eventdata
+  )
+
+  obj$subset(cells = 1)
+
+  expect_equal(ncol(obj$m1), 1)
+})
+
+test_that("make_m2 produces symmetric results for group operations", {
+  # Verify M2 = group_sum - M1 for each event
+  test_data <- readRDS("../../../test_splikit.rds")
+
+  m2 <- make_m2(
+    m1_inclusion_matrix = test_data$m1,
+    eventdata = test_data$eventdata,
+    verbose = FALSE
+  )
+
+  # For any event, M1 + M2 should equal the group sum
+  # Check first few groups
+  unique_groups <- unique(test_data$eventdata$group_id)[1:5]
+
+  for (grp in unique_groups) {
+    grp_events <- which(test_data$eventdata$group_id == grp)
+    if (length(grp_events) > 1) {
+      # Group sum should be the same for all events in group
+      for (i in grp_events) {
+        m1_val <- test_data$m1[i, 1]
+        m2_val <- m2[i, 1]
+        group_sum <- sum(test_data$m1[grp_events, 1])
+        expect_equal(m1_val + m2_val, group_sum, info = paste("Group:", grp, "Event:", i))
+      }
+    }
+  }
+})
+
+# ============================================================================
+# Integration Tests (from deep analysis recommendations)
+# ============================================================================
+
+test_that("Full R6 pipeline runs without errors", {
+  skip_if_not_installed("Matrix")
+
+  test_data <- readRDS("../../../test_splikit.rds")
+
+  # Create object
+
+obj <- splikit(
+    m1 = test_data$m1,
+    eventData = test_data$eventdata
+  )
+
+  # Compute M2
+  obj$makeM2(verbose = FALSE)
+
+  expect_true(!is.null(obj$m2))
+  expect_equal(dim(obj$m2), dim(obj$m1))
+
+  # Find variable events
+  hve <- obj$findVariableEvents(min_row_sum = 50, verbose = FALSE)
+
+  expect_true(nrow(hve) > 0)
+  expect_true("events" %in% names(hve))
+  expect_true("sum_deviance" %in% names(hve))
+
+  # Check metadata was updated
+  expect_true("variableEvents" %in% names(obj$metadata))
+})
+
+test_that("SplikitObject works with very small matrices", {
+  # Edge case: minimal viable input
+  m1_small <- Matrix::rsparsematrix(10, 5, 0.5)
+  rownames(m1_small) <- paste0("event_", 1:10)
+  colnames(m1_small) <- paste0("cell_", 1:5)
+
+  eventdata_small <- data.table::data.table(
+    event_id = paste0("event_", 1:10),
+    group_id = rep(c("group1", "group2"), each = 5)
+  )
+
+  obj <- SplikitObject$new(
+    m1 = m1_small,
+    eventData = eventdata_small
+  )
+
+  expect_equal(nrow(obj$m1), 10)
+  expect_equal(ncol(obj$m1), 5)
+
+  obj$makeM2(verbose = FALSE)
+  expect_true(!is.null(obj$m2))
+})
+
+test_that("n_threads parameter is passed correctly", {
+  test_data <- readRDS("../../../test_splikit.rds")
+
+  m2 <- make_m2(
+    m1_inclusion_matrix = test_data$m1,
+    eventdata = test_data$eventdata,
+    verbose = FALSE
+  )
+
+  obj <- SplikitObject$new(
+    m1 = test_data$m1,
+    m2 = m2,
+    eventData = test_data$eventdata
+  )
+
+  # Should run without error with multiple threads
+  result <- obj$findVariableEvents(min_row_sum = 100, n_threads = 2, verbose = FALSE)
+  expect_true(nrow(result) > 0)
+})

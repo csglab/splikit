@@ -50,7 +50,19 @@ find_variable_events <- function(m1_matrix, m2_matrix = NULL, min_row_sum = 50, 
   }
 
   # Filter rows based on minimum row sum criteria
-  to_keep_events <- which(rowSums(m1_matrix) > min_row_sum & rowSums(m2_matrix) > min_row_sum)
+  m1_sums <- Matrix::rowSums(m1_matrix)
+  m2_sums <- Matrix::rowSums(m2_matrix)
+  to_keep_events <- which(m1_sums > min_row_sum & m2_sums > min_row_sum)
+
+  # Check for empty results (Issue #23 from deep analysis)
+  if (length(to_keep_events) == 0) {
+    stop("No events pass the min_row_sum threshold of ", min_row_sum,
+         ". Consider lowering the threshold or checking your data. ",
+         "Current range: m1 [", min(m1_sums), "-", max(m1_sums), "], ",
+         "m2 [", min(m2_sums), "-", max(m2_sums), "]",
+         call. = FALSE)
+  }
+
   m1_matrix <- m1_matrix[to_keep_events, , drop = FALSE]
   m2_matrix <- m2_matrix[to_keep_events, , drop = FALSE]
 
