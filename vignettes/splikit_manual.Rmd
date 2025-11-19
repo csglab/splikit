@@ -15,13 +15,14 @@ vignette: >
 2. [Installation](#installation)
 3. [Core Concepts](#core-concepts)
 4. [Getting Started](#getting-started)
-5. [Main Workflow Functions](#main-workflow-functions)
-6. [Feature Selection Functions](#feature-selection-functions)
-7. [Utility Functions](#utility-functions)
-8. [Complete Workflow Example](#complete-workflow-example)
-9. [Advanced Usage](#advanced-usage)
-10. [Troubleshooting](#troubleshooting)
-11. [Function Reference](#function-reference)
+5. [R6 Object-Oriented Interface](#r6-object-oriented-interface)
+6. [Main Workflow Functions](#main-workflow-functions)
+7. [Feature Selection Functions](#feature-selection-functions)
+8. [Utility Functions](#utility-functions)
+9. [Complete Workflow Example](#complete-workflow-example)
+10. [Advanced Usage](#advanced-usage)
+11. [Troubleshooting](#troubleshooting)
+12. [Function Reference](#function-reference)
 
 ---
 
@@ -175,6 +176,178 @@ head(variable_events[order(-sum_deviance)])
 
 ---
 
+## R6 Object-Oriented Interface
+
+Starting with version 2.0.0, splikit introduces a modern R6 object-oriented interface through the `SplikitObject` class. This provides a more intuitive and streamlined workflow with method chaining support.
+
+### Creating a SplikitObject
+
+```r
+library(splikit)
+
+# Load toy data for demonstration
+toy_sj_data <- load_toy_SJ_object()
+
+# Create SplikitObject from junction abundance data
+spl <- SplikitObject$new(junction_ab_object = toy_sj_data)
+
+# View object summary
+print(spl)
+```
+
+### Complete Workflow with Method Chaining
+
+The R6 interface supports method chaining for a clean, pipeline-style workflow:
+
+```r
+# Complete analysis pipeline with method chaining
+spl <- SplikitObject$new(junction_ab_object = toy_sj_data)$
+  makeM1(min_counts = 1)$
+  makeM2(n_threads = 4, verbose = TRUE)$
+  findVariableEvents(min_row_sum = 30, n_threads = 4)
+
+# Access results
+m1_matrix <- spl$m1
+m2_matrix <- spl$m2
+variable_events <- spl$variableEvents
+event_data <- spl$eventData
+```
+
+### Step-by-Step Workflow
+
+For more control, you can call methods individually:
+
+```r
+# Create object
+spl <- SplikitObject$new(junction_ab_object = toy_sj_data)
+
+# Step 1: Create M1 matrix
+spl$makeM1(min_counts = 1, verbose = TRUE)
+print(dim(spl$m1))  # Check dimensions
+
+# Step 2: Create M2 matrix with multi-threading
+spl$makeM2(
+  n_threads = 4,           # Number of OpenMP threads
+  use_cpp = TRUE,          # Use optimized C++ implementation
+  verbose = TRUE
+)
+print(dim(spl$m2))  # Same dimensions as M1
+
+# Step 3: Find highly variable events
+spl$findVariableEvents(
+  min_row_sum = 30,
+  n_threads = 4
+)
+
+# View top variable events
+top_events <- spl$variableEvents[order(-sum_deviance)][1:10]
+print(top_events)
+```
+
+### Subsetting SplikitObjects
+
+SplikitObjects support flexible subsetting by events, cells, or both:
+
+```r
+# Subset by events (rows)
+top_100_events <- spl$variableEvents$events[1:100]
+spl_subset <- spl$subset(events = top_100_events)
+
+# Subset by cells (columns)
+selected_cells <- colnames(spl$m1)[1:500]
+spl_cells <- spl$subset(cells = selected_cells)
+
+# Subset both events and cells
+spl_combined <- spl$subset(
+  events = top_100_events,
+  cells = selected_cells
+)
+
+# Check dimensions
+print(dim(spl_subset$m1))
+print(dim(spl_cells$m1))
+print(dim(spl_combined$m1))
+```
+
+### Working with Existing Matrices
+
+You can also create a SplikitObject from pre-computed matrices:
+
+```r
+# Load pre-computed M1/M2 data
+toy_m1m2 <- load_toy_M1_M2_object()
+
+# Create SplikitObject from existing matrices
+spl <- SplikitObject$new(
+  m1_matrix = toy_m1m2$m1,
+  m2_matrix = toy_m1m2$m2
+)
+
+# Directly find variable events (M1 and M2 already computed)
+spl$findVariableEvents(min_row_sum = 50, n_threads = 4)
+```
+
+### Accessing SplikitObject Fields
+
+The SplikitObject provides access to all data through fields:
+
+```r
+# Core matrices
+spl$m1              # Inclusion matrix (events × cells)
+spl$m2              # Exclusion matrix (events × cells)
+
+# Metadata
+spl$eventData       # Event metadata data.table
+spl$variableEvents  # Variable events results
+
+# Original data
+spl$junctionAbObject  # Raw junction abundance data
+```
+
+### R6 vs Function-Based Interface Comparison
+
+Both interfaces produce identical results. Choose based on your workflow preference:
+
+**R6 Interface** (recommended for new users):
+```r
+spl <- SplikitObject$new(junction_ab_object = toy_sj_data)$
+  makeM1(min_counts = 1)$
+  makeM2(n_threads = 4)$
+  findVariableEvents(min_row_sum = 30)
+
+m1 <- spl$m1
+m2 <- spl$m2
+hve <- spl$variableEvents
+```
+
+**Function-Based Interface** (traditional):
+```r
+m1_result <- make_m1(toy_sj_data, min_counts = 1)
+m2 <- make_m2(m1_result$m1_inclusion_matrix, m1_result$event_data, n_threads = 4)
+hve <- find_variable_events(m1_result$m1_inclusion_matrix, m2, min_row_sum = 30)
+```
+
+### Performance Features
+
+The SplikitObject methods support the same performance optimizations as the underlying functions:
+
+- **Multi-threading**: Set `n_threads` parameter for OpenMP parallelization
+- **Memory-efficient M2**: Version 2.0.0 includes a completely rewritten `make_m2` implementation with ~30x memory reduction
+- **C++ optimization**: Set `use_cpp = TRUE` (default) for maximum performance
+
+```r
+# Check if OpenMP is available
+check_openmp_enabled()
+
+# Use all available cores for large datasets
+n_cores <- parallel::detectCores() - 1
+
+spl$makeM2(n_threads = n_cores, use_cpp = TRUE, verbose = TRUE)
+spl$findVariableEvents(n_threads = n_cores, min_row_sum = 50)
+```
+
+---
+
 ## Main Workflow Functions
 
 ### `make_junction_ab()`
@@ -307,9 +480,10 @@ The M1 matrix represents inclusion evidence:
 
 **Function Signature**:
 ```r
-make_m2(m1_inclusion_matrix, eventdata, batch_size = 5000, 
-        memory_threshold = 2e9, force_fast = FALSE, 
-        multi_thread = FALSE, verbose = FALSE)
+make_m2(m1_inclusion_matrix, eventdata, batch_size = 5000,
+        memory_threshold = 2e9, force_fast = FALSE,
+        multi_thread = FALSE, n_threads = 1, use_cpp = TRUE,
+        verbose = FALSE)
 ```
 
 **Parameters**:
@@ -319,7 +493,16 @@ make_m2(m1_inclusion_matrix, eventdata, batch_size = 5000,
 - `memory_threshold`: Maximum rows before switching to batched processing (default 2e9)
 - `force_fast`: Force fast processing regardless of memory estimates (default FALSE)
 - `multi_thread`: Enable parallel processing for batched operations (default FALSE)
+- `n_threads`: Number of OpenMP threads for C++ implementation (default 1)
+- `use_cpp`: Use optimized C++ implementation (default TRUE, recommended)
 - `verbose`: Logical for detailed progress reporting (default FALSE)
+
+**Performance Notes (v2.0.0)**:
+The C++ implementation has been completely rewritten for version 2.0.0 with significant improvements:
+- **~8x faster execution** through two-pass CSC format construction
+- **~30x lower memory usage** by eliminating intermediate dense matrices
+- Memory usage now scales with output size only: O(nnz_output) + O(n_groups)
+- Previous versions used O(n_groups × n_cells) for intermediate storage
 
 **The Exclusion Calculation Logic**:
 
@@ -1147,4 +1330,4 @@ For additional support, examples, and updates, visit the package documentation a
 
 ---
 
-*This manual was generated for splikit version 1.0.5 For the most up-to-date information, please refer to the package documentation and vignettes.*
+*This manual was generated for splikit version 2.0.0. For the most up-to-date information, please refer to the package documentation and vignettes.*
