@@ -41,8 +41,9 @@ library(Matrix)
 toy_obj <- load_toy_M1_M2_object()
 
 # getting high variable genes
-HVG_VST <- find_variable_genes(toy_obj$gene_expression, method = "vst") # vst method
-HVG_DEV <- find_variable_genes(toy_obj$gene_expression, method = "sum_deviance") # sum_deviance method
+HVG_VST <- find_variable_genes(toy_obj$gene_expression, method = "vst")
+HVG_DEV <- find_variable_genes(toy_obj$gene_expression,
+                               method = "sum_deviance")
 
 # Using multi-threading for faster computation (sum_deviance method only)
 HVG_DEV_MT <- find_variable_genes(toy_obj$gene_expression, 

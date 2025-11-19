@@ -52,3 +52,7 @@ rsconnect/
 *.o
 *.so
 .DS_Store
+
+# pkgdown site (deployed to gh-pages)
+docs/*
+!docs/.nojekyll

@@ -3,14 +3,11 @@ using namespace Rcpp;
 
 // [[Rcpp::export]]
 NumericVector rowVariance_cpp(SEXP mat) {
-  Rcout << "[rowVariance_cpp] Entering function\n";
 
-  // Dense matrix path
+  // Dense numeric matrix path
   if (Rf_isMatrix(mat) && TYPEOF(mat) == REALSXP) {
     NumericMatrix M(mat);
     int nrow = M.nrow(), ncol = M.ncol();
-    Rcout << "[rowVariance_cpp] Detected dense matrix: "
-          << nrow << "×" << ncol << "\n";
 
     NumericVector out(nrow);
     for (int i = 0; i < nrow; ++i) {
@@ -24,7 +21,26 @@ NumericVector rowVariance_cpp(SEXP mat) {
       out[i] = sum2 / ncol - mean * mean;
     }
 
-    Rcout << "[rowVariance_cpp] Dense computation complete\n";
+    return out;
+  }
+
+  // Dense integer matrix path (Issue #16 from deep analysis)
+  if (Rf_isMatrix(mat) && TYPEOF(mat) == INTSXP) {
+    IntegerMatrix M(mat);
+    int nrow = M.nrow(), ncol = M.ncol();
+
+    NumericVector out(nrow);
+    for (int i = 0; i < nrow; ++i) {
+      double sum = 0.0, sum2 = 0.0;
+      for (int j = 0; j < ncol; ++j) {
+        double v = static_cast<double>(M(i, j));
+        sum  += v;
+        sum2 += v * v;
+      }
+      double mean = sum / ncol;
+      out[i] = sum2 / ncol - mean * mean;
+    }
+
     return out;
   }
 
@@ -37,8 +53,6 @@ NumericVector rowVariance_cpp(SEXP mat) {
     NumericVector x     = M.slot("x");
 
     int nrow = dims[0], ncol = dims[1];
-    Rcout << "[rowVariance_cpp] Detected sparse dgCMatrix: "
-          << nrow << "×" << ncol << "\n";
 
     NumericVector rowSum(nrow, 0.0), rowSum2(nrow, 0.0);
 
@@ -58,7 +72,6 @@ NumericVector rowVariance_cpp(SEXP mat) {
       out[row] = rowSum2[row] / ncol - mean * mean;
     }
 
-    Rcout << "[rowVariance_cpp] Sparse computation complete\n";
     return out;
   }
 

@@ -37,6 +37,40 @@ standardizeSparse_variance_vst <- function(matSEXP, display_progress = FALSE) {
     .Call(`_splikit_standardizeSparse_variance_vst`, matSEXP, display_progress)
 }
 
+#' Memory-efficient M2 computation building CSC format directly
+#'
+#' This version minimizes memory usage by:
+#' - Building CSC format directly (no triplet intermediate)
+#' - Using O(n_groups) workspace per column instead of dense group_sums matrix
+#' - Two-pass algorithm: count then fill
+#'
+#' Memory usage: O(nnz_output) + O(n_groups) workspace
+#' vs previous: O(n_groups * n_cells) + O(6 * nnz_output)
+#'
+#' @param M1 Sparse matrix (dgCMatrix) of inclusion counts (events x cells)
+#' @param group_ids Integer vector of group IDs for each event
+#' @param n_threads Number of threads for OpenMP (default 1)
+#'
+#' @return Sparse matrix M2 with same dimensions as M1
+#'
+#' @keywords internal
+make_m2_cpp_parallel <- function(M1, group_ids, n_threads = 1L) {
+    .Call(`_splikit_make_m2_cpp_parallel`, M1, group_ids, n_threads)
+}
+
+#' Legacy function - redirects to memory-efficient version
+#'
+#' @param M1 Sparse matrix (dgCMatrix) of inclusion counts (events x cells)
+#' @param group_ids Integer vector of group IDs for each event
+#' @param n_threads Number of threads for OpenMP (default 1)
+#'
+#' @return Sparse matrix M2 with same dimensions as M1
+#'
+#' @keywords internal
+make_m2_cpp <- function(M1, group_ids, n_threads = 1L) {
+    .Call(`_splikit_make_m2_cpp`, M1, group_ids, n_threads)
+}
+
 rowVariance_cpp <- function(mat) {
     .Call(`_splikit_rowVariance_cpp`, mat)
 }

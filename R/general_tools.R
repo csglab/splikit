@@ -56,14 +56,34 @@ NULL
 #' print(pseudo_r_square_nagel)
 #'
 #' @export
-get_pseudo_correlation <- function(ZDB_matrix, m1_inclusion, m2_exclusion, metric = "CoxSnell", suppress_warnings=TRUE) {
+get_pseudo_correlation <- function(ZDB_matrix, m1_inclusion = NULL, m2_exclusion = NULL, metric = "CoxSnell", suppress_warnings=TRUE) {
+
+ # Handle SplikitObject input
+  if (inherits(ZDB_matrix, "SplikitObject")) {
+    # First arg is SplikitObject, second should be ZDB_matrix
+    obj <- ZDB_matrix
+    if (is.null(m1_inclusion) || !is.matrix(m1_inclusion)) {
+      stop("When using SplikitObject, provide ZDB_matrix as second argument.", call. = FALSE)
+    }
+    ZDB_matrix <- m1_inclusion
+    m1_inclusion <- obj$m1
+    m2_exclusion <- obj$m2
+    if (is.null(m2_exclusion)) {
+      stop("SplikitObject has no M2 matrix. Call obj$makeM2() first.", call. = FALSE)
+    }
+  }
+
+  # Check m1 and m2 are provided
+  if (is.null(m1_inclusion) || is.null(m2_exclusion)) {
+    stop("m1_inclusion and m2_exclusion are required.", call. = FALSE)
+  }
 
   # Validate metric parameter
   metric <- match.arg(metric, choices = c("CoxSnell", "Nagelkerke"))
-  
+
   # Check ZDB_matrix (must be dense)
   if (!is.matrix(ZDB_matrix)) stop("ZDB_matrix must be a dense matrix.")
-  
+
   # Check m1 and m2 (can be sparse or dense)
   if (!is.matrix(m1_inclusion) && !inherits(m1_inclusion, "Matrix")) {
     stop("m1_inclusion must be either a dense matrix or a sparse Matrix.")
@@ -209,7 +229,7 @@ get_rowVar <- function(M, verbose=FALSE) {
 #' # Preparing the inputs
 #' set.seed(42)
 #' pc_matrix <- matrix(data = rnorm(n = 10000 * 15, sd = 2), nrow = 10000, ncol = 15)
-#' cluster_numbers <- runif(n = 10000, min = 1, max = 10) |> as.integer()
+#' cluster_numbers <- as.integer(runif(n = 10000, min = 1, max = 10))
 #'
 #' # Getting the mean silhouette score
 #' n_threads <- parallel::detectCores()

@@ -1,5 +1,4 @@
 #include <RcppArmadillo.h>
-#include <atomic>
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -13,21 +12,6 @@ arma::vec calcNBDeviancesWithThetaEstimation(const arma::sp_mat& gene_expression
   int n_rows = gene_expression.n_rows;
   int n_cols = gene_expression.n_cols;  // number of cells
   arma::vec dev(n_rows, arma::fill::zeros);
-
-  // Notify about OpenMP availability only once (thread-safe)
-  static std::atomic<bool> has_printed(false);
-  bool expected = false;
-  if (has_printed.compare_exchange_strong(expected, true)) {
-    #ifdef _OPENMP
-      if (num_threads > 1) {
-        Rcpp::Rcout << "OpenMP is available. Using " << num_threads << " threads for NB deviance calculation.\n";
-      }
-    #else
-      if (num_threads > 1) {
-        Rcpp::Rcout << "OpenMP is not available. Running in single-threaded mode.\n";
-      }
-    #endif
-  }
 
   #ifdef _OPENMP
   if (num_threads > 1) {
