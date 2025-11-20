@@ -1,5 +1,5 @@
 Package: splikit
-Title: A Toolkit for Analysing RNA Splicing in Single-cell RNA Sequencing Data
+Title: A Toolkit for Analysing RNA Splicing in Single-Cell RNA Sequencing Data
 Version: 2.0.0
 Authors@R:
     person("Arsham", "Mikaeili Namini", , "arsham.mikaeilinamini@mail.mcgill.ca", role = c("aut", "cre"),
