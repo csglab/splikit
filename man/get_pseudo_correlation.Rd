@@ -6,8 +6,8 @@
 \usage{
 get_pseudo_correlation(
   ZDB_matrix,
-  m1_inclusion,
-  m2_exclusion,
+  m1_inclusion = NULL,
+  m2_exclusion = NULL,
   metric = "CoxSnell",
   suppress_warnings = TRUE,
   verbose = FALSE

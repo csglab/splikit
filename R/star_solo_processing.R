@@ -60,6 +60,8 @@ make_junction_ab <- function(STARsolo_SJ_dirs, white_barcode_lists = NULL, sampl
 
   # Helper function to process one sample
   process_sj_sample <- function(STARsolo_SJ_dir, white_barcode_list, sample_id) {
+    # Avoid R CMD check NOTE for data.table NSE
+    unique_mapped <- NULL
     # Define paths
     mtx_dir <- file.path(STARsolo_SJ_dir, "raw", "matrix.mtx")
     feature_dir <- file.path(STARsolo_SJ_dir, "../../SJ.out.tab")
@@ -588,8 +590,10 @@ make_m1 <- function(junction_ab_object, min_counts = 1, verbose = FALSE) {
 #'   summary before switching to batched processing (default: 2e9, which is ~93% of 2^31).
 #' @param force_fast A logical flag to force fast processing regardless of size estimates (default: FALSE).
 #'   WARNING: This may cause memory errors on large datasets.
-#' @param n_threads Number of threads for parallel processing in batched operations (default: 1).
-#'   Only used when batched processing is triggered. Values > 1 require parallel package.
+#' @param n_threads Number of threads for parallel processing (default: 1).
+#'   Used for C++ implementation and batched R processing. Values > 1 require parallel package for batched mode.
+#' @param use_cpp Logical flag to use fast C++ implementation (default: TRUE).
+#'   Falls back to R implementation if FALSE.
 #' @param verbose A logical flag for detailed progress reporting (default: FALSE).
 #'
 #' @return A sparse matrix M2 with the dummy row removed and proper adjustments made.
@@ -610,7 +614,7 @@ make_m1 <- function(junction_ab_object, min_counts = 1, verbose = FALSE) {
 #' @export
 make_m2 <- function(m1_inclusion_matrix, eventdata, batch_size = 5000,
                     memory_threshold = 2e9, force_fast = FALSE,
-                    n_threads = 1, verbose = FALSE) {
+                    n_threads = 1, use_cpp = TRUE, verbose = FALSE) {
 
   # Input validation
   if (missing(m1_inclusion_matrix) || !inherits(m1_inclusion_matrix, "sparseMatrix")) {
@@ -643,6 +647,37 @@ make_m2 <- function(m1_inclusion_matrix, eventdata, batch_size = 5000,
 
   if (verbose) message("Starting M2 matrix creation...")
 
+  # Use C++ implementation if requested
+  if (use_cpp) {
+    if (verbose) message("+-- Using C++ implementation for faster computation")
+
+    # Convert group_id to numeric indices (0-based for C++)
+    unique_groups <- unique(eventdata$group_id)
+    group_map <- setNames(seq_along(unique_groups) - 1L, unique_groups)
+    group_ids_numeric <- as.integer(group_map[eventdata$group_id])
+
+    if (verbose) {
+      message("|   |-- Events: ", nrow(m1_inclusion_matrix))
+      message("|   |-- Cells: ", ncol(m1_inclusion_matrix))
+      message("|   +-- Groups: ", length(unique_groups))
+    }
+
+    # Call C++ function
+    M2 <- make_m2_cpp_parallel(
+      M1 = methods::as(m1_inclusion_matrix, "dgCMatrix"),
+      group_ids = group_ids_numeric,
+      n_threads = n_threads
+    )
+
+    # Set row and column names
+    rownames(M2) <- rownames(m1_inclusion_matrix)
+    colnames(M2) <- colnames(m1_inclusion_matrix)
+
+    if (verbose) message("Finished M2 matrix creation.")
+    return(M2)
+  }
+
+  # Fallback to R implementation
   # Add an index column to eventdata
   eventdata[, i := .I]
 

@@ -19,7 +19,22 @@
 #'  # printing the results
 #'  print(HVE[order(-sum_deviance)])
 #' @export
-find_variable_events <- function(m1_matrix, m2_matrix, min_row_sum = 50, n_threads = 1, verbose = FALSE, ...) {
+find_variable_events <- function(m1_matrix, m2_matrix = NULL, min_row_sum = 50, n_threads = 1, verbose = FALSE, ...) {
+
+  # Handle SplikitObject input
+  if (inherits(m1_matrix, "SplikitObject")) {
+    obj <- m1_matrix
+    if (is.null(obj$m2)) {
+      stop("SplikitObject has no M2 matrix. Call obj$makeM2() first.", call. = FALSE)
+    }
+    m1_matrix <- obj$m1
+    m2_matrix <- obj$m2
+  }
+
+  # Check if m2_matrix is provided
+  if (is.null(m2_matrix)) {
+    stop("m2_matrix is required. Provide either both matrices or a SplikitObject.", call. = FALSE)
+  }
 
   # Check if matrices are sparse
   if (!(inherits(m1_matrix, "Matrix") && inherits(m2_matrix, "Matrix"))) {
@@ -34,7 +49,19 @@ find_variable_events <- function(m1_matrix, m2_matrix, min_row_sum = 50, n_threa
   }
 
   # Filter rows based on minimum row sum criteria
-  to_keep_events <- which(rowSums(m1_matrix) > min_row_sum & rowSums(m2_matrix) > min_row_sum)
+  m1_sums <- Matrix::rowSums(m1_matrix)
+  m2_sums <- Matrix::rowSums(m2_matrix)
+  to_keep_events <- which(m1_sums > min_row_sum & m2_sums > min_row_sum)
+
+  # Check for empty results (Issue #23 from deep analysis)
+  if (length(to_keep_events) == 0) {
+    stop("No events pass the min_row_sum threshold of ", min_row_sum,
+         ". Consider lowering the threshold or checking your data. ",
+         "Current range: m1 [", min(m1_sums), "-", max(m1_sums), "], ",
+         "m2 [", min(m2_sums), "-", max(m2_sums), "]",
+         call. = FALSE)
+  }
+
   m1_matrix <- m1_matrix[to_keep_events, , drop = FALSE]
   m2_matrix <- m2_matrix[to_keep_events, , drop = FALSE]
 
@@ -99,10 +126,10 @@ find_variable_events <- function(m1_matrix, m2_matrix, min_row_sum = 50, n_threa
 #' toy_obj <- load_toy_M1_M2_object()
 #'
 #' # getting high variable genes
-#' HVG_VST <- find_variable_genes(toy_obj$gene_expression, method = "vst") # vst method
+#' HVG_VST <- find_variable_genes(toy_obj$gene_expression, method = "vst")
 #' # sum_deviance method
 #' HVG_DEV <- find_variable_genes(toy_obj$gene_expression, method = "sum_deviance")
-#' 
+#'
 #' # Using multi-threading for faster computation (sum_deviance method only)
 #' HVG_DEV_MT <- find_variable_genes(toy_obj$gene_expression, 
 #'                                   method = "sum_deviance", 

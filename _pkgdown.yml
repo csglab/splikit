@@ -44,6 +44,11 @@ articles:
   - STARsolo_guide
 
 reference:
+- title: R6 Object Interface
+  desc: Modern object-oriented interface for splicing analysis
+  contents:
+  - SplikitObject
+
 - title: Main Functions
   desc: Core functions for splicing analysis
   contents:
@@ -74,3 +79,8 @@ reference:
   contents:
   - load_toy_M1_M2_object
   - load_toy_SJ_object
+
+- title: Package
+  desc: Package information
+  contents:
+  - splikit

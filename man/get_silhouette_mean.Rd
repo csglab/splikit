@@ -28,7 +28,7 @@ This process can be very slow for large matrices if single-threaded. Use multipl
 # Preparing the inputs
 set.seed(42)
 pc_matrix <- matrix(data = rnorm(n = 10000 * 15, sd = 2), nrow = 10000, ncol = 15)
-cluster_numbers <- runif(n = 10000, min = 1, max = 10) |> as.integer()
+cluster_numbers <- as.integer(runif(n = 10000, min = 1, max = 10))
 
 # Getting the mean silhouette score
 n_threads <- parallel::detectCores()

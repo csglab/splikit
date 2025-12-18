@@ -11,7 +11,6 @@
 //  - Computes per-row means and variances (including zero entries)
 //  - Fits a loess curve to log10(var) ~ log10(mean)
 //  - Returns standardized variances (squared z-scores) per row
-//  - Logs progress via Rcpp::Rcout
 //
 // Only 32-bit indexing is supported, consistent with R's native dgCMatrix.
 
@@ -21,8 +20,6 @@ using namespace Rcpp;
 // [[Rcpp::export]]
 NumericVector standardizeSparse_variance_vst(SEXP matSEXP,
                                                bool display_progress = false) {
-  Rcout << "[SSVL] entering\n";
-
   // 1) validate & extract
   if (!Rf_isS4(matSEXP) || !Rf_inherits(matSEXP, "dgCMatrix"))
     stop("`mat` must be a dgCMatrix");
@@ -121,7 +118,6 @@ NumericVector standardizeSparse_variance_vst(SEXP matSEXP,
       result[r] = (ncol > 1) ? ( result[r] / (ncol - 1) ) : 0.0;
     }
 
-    Rcout << "[SSVL] exiting\n";
     return result;
 }
 

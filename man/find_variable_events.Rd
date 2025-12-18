@@ -6,7 +6,7 @@
 \usage{
 find_variable_events(
   m1_matrix,
-  m2_matrix,
+  m2_matrix = NULL,
   min_row_sum = 50,
   n_threads = 1,
   verbose = FALSE,

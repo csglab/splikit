@@ -1,6 +1,5 @@
 // calcDeviances_ratio.cpp
 #include <RcppArmadillo.h>
-#include <atomic>
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -15,27 +14,6 @@ arma::vec calcDeviances_ratio(const arma::sp_mat& M1,
   int n_rows = M1.n_rows;
   int n_cols = M1.n_cols;
   arma::vec dev(n_rows, arma::fill::zeros);
-  
-  // Notify about OpenMP availability only once (thread-safe)
-  static std::atomic<bool> has_printed(false);
-  bool expected = false;
-  if (has_printed.compare_exchange_strong(expected, true)) {
-    if (num_threads <= 1) {
-#ifdef _OPENMP
-      Rcpp::Rcout << "Note: OpenMP is available. "
-      "You can speed up this computation by passing "
-      "num_threads > 1 to enable multi-threading.\n";
-#else
-      Rcpp::Rcout << "OpenMP not detected: running in single-thread mode.\n";
-#endif
-    } else {
-#ifdef _OPENMP
-      Rcpp::Rcout << "Running with " << num_threads << " threads.\n";
-#else
-      Rcpp::Rcout << "OpenMP not detected: running in single-thread mode.\n";
-#endif
-    }
-  }
   
   // Set the number of threads if OpenMP is available
 #ifdef _OPENMP
