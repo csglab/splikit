@@ -9,7 +9,8 @@ make_velo_count(
   sample_ids,
   whitelist_barcodes = NULL,
   use_internal_whitelist = TRUE,
-  merge_counts = FALSE
+  merge_counts = FALSE,
+  verbose = FALSE
 )
 }
 \arguments{
@@ -29,6 +30,8 @@ raw matrix will be used unless a whitelist is explicitly provided.}
 
 \item{merge_counts}{Logical (default \code{FALSE}). If \code{TRUE}, spliced and unspliced matrices across all samples are merged
 into two combined matrices (one for spliced, one for unspliced). If \code{FALSE}, the results are returned per sample.}
+
+\item{verbose}{Logical. If \code{TRUE}, prints progress and informational messages. Default is \code{FALSE}.}
 }
 \value{
 A list containing processed gene expression matrices:

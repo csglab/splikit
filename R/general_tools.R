@@ -1,6 +1,11 @@
 #' @useDynLib splikit, .registration = TRUE
 #' @importFrom Rcpp evalCpp
+#' @importFrom methods as
+#' @importFrom stats na.omit
 NULL
+
+# Declare global variables used in data.table operations to avoid R CMD check NOTEs
+utils::globalVariables(c("unique_mapped", "i", "j", "x_1", "x_tot", "x_2", "group_id", "ID"))
 
 #' Compute Pseudo-Correlation Using Beta-Binomial Model
 #'
@@ -13,8 +18,8 @@ NULL
 #' @param m1_inclusion A numeric matrix (dense or sparse) of the same number of rows as `ZDB_matrix`, representing inclusion features.
 #' @param m2_exclusion A numeric matrix (dense or sparse) of the same number of rows as `ZDB_matrix`, representing exclusion features.
 #' @param metric Character string specifying which R² metric to compute. Options are "CoxSnell" (default) or "Nagelkerke".
-#' @param suppress_warnings Logical. If \code{TRUE} (default), suppresses warnings during any warnings triggered during
-#' computation (e.g., due to ill-conditioned inputs)
+#' @param suppress_warnings Logical. If \code{TRUE} (default), suppresses warnings during computation (e.g., due to ill-conditioned inputs).
+#' @param verbose Logical. If \code{TRUE}, prints progress and informational messages. Default is \code{FALSE}.
 #'
 #' @return A `data.table` with the following columns:
 #' \describe{
@@ -56,14 +61,14 @@ NULL
 #' print(pseudo_r_square_nagel)
 #'
 #' @export
-get_pseudo_correlation <- function(ZDB_matrix, m1_inclusion, m2_exclusion, metric = "CoxSnell", suppress_warnings=TRUE) {
+get_pseudo_correlation <- function(ZDB_matrix, m1_inclusion, m2_exclusion, metric = "CoxSnell", suppress_warnings = TRUE, verbose = FALSE) {
 
   # Validate metric parameter
   metric <- match.arg(metric, choices = c("CoxSnell", "Nagelkerke"))
-  
+
   # Check ZDB_matrix (must be dense)
   if (!is.matrix(ZDB_matrix)) stop("ZDB_matrix must be a dense matrix.")
-  
+
   # Check m1 and m2 (can be sparse or dense)
   if (!is.matrix(m1_inclusion) && !inherits(m1_inclusion, "Matrix")) {
     stop("m1_inclusion must be either a dense matrix or a sparse Matrix.")
@@ -79,81 +84,87 @@ get_pseudo_correlation <- function(ZDB_matrix, m1_inclusion, m2_exclusion, metri
     stop("m2_exclusion must have the same number of rows as ZDB_matrix.")
   }
 
-  cat("Input dimension check passed. Proceeding with computation.\n")
-  if(suppress_warnings){suppressWarnings({
-      
-      # Determine which C++ function to call based on matrix types
-      is_m1_sparse <- inherits(m1_inclusion, "Matrix")
-      is_m2_sparse <- inherits(m2_exclusion, "Matrix")
-      
-      if (!is_m1_sparse && !is_m2_sparse) {
-        # Both dense - ensure they are matrices
-        correls <- cppBetabinPseudoR2(Z = ZDB_matrix,
+  if (verbose) message("Input dimension check passed. Proceeding with computation.")
+
+  # Define the computation function
+  run_computation <- function() {
+    # Determine which C++ function to call based on matrix types
+    is_m1_sparse <- inherits(m1_inclusion, "Matrix")
+    is_m2_sparse <- inherits(m2_exclusion, "Matrix")
+
+    if (!is_m1_sparse && !is_m2_sparse) {
+      # Both dense - ensure they are matrices
+      correls <- cppBetabinPseudoR2(Z = ZDB_matrix,
+                                    m1 = as.matrix(m1_inclusion),
+                                    m2 = as.matrix(m2_exclusion),
+                                    metric = metric)
+    } else if (is_m1_sparse && is_m2_sparse) {
+      # Both sparse
+      correls <- cppBetabinPseudoR2_sparse(Z = ZDB_matrix,
+                                           m1 = m1_inclusion,
+                                           m2 = m2_exclusion,
+                                           metric = metric)
+    } else if (is_m1_sparse && !is_m2_sparse) {
+      # m1 sparse, m2 dense
+      correls <- cppBetabinPseudoR2_mixed1(Z = ZDB_matrix,
+                                           m1 = m1_inclusion,
+                                           m2 = as.matrix(m2_exclusion),
+                                           metric = metric)
+    } else {
+      # m1 dense, m2 sparse
+      correls <- cppBetabinPseudoR2_mixed2(Z = ZDB_matrix,
+                                           m1 = as.matrix(m1_inclusion),
+                                           m2 = m2_exclusion,
+                                           metric = metric)
+    }
+
+    if (is.null(rownames(ZDB_matrix))) {
+      warning("ZDB_matrix has no row names; assigning default event names.")
+      events <- paste0("Event_", seq_len(nrow(ZDB_matrix)))
+    } else {
+      events <- rownames(ZDB_matrix)
+    }
+
+    # Calculate null distribution with the same metric and matrix types
+    if (!is_m1_sparse && !is_m2_sparse) {
+      null_dist <- cppBetabinPseudoR2(Z = ZDB_matrix[, sample.int(ncol(ZDB_matrix))],
                                       m1 = as.matrix(m1_inclusion),
                                       m2 = as.matrix(m2_exclusion),
                                       metric = metric)
-      } else if (is_m1_sparse && is_m2_sparse) {
-        # Both sparse
-        correls <- cppBetabinPseudoR2_sparse(Z = ZDB_matrix,
+    } else if (is_m1_sparse && is_m2_sparse) {
+      null_dist <- cppBetabinPseudoR2_sparse(Z = ZDB_matrix[, sample.int(ncol(ZDB_matrix))],
                                              m1 = m1_inclusion,
                                              m2 = m2_exclusion,
                                              metric = metric)
-      } else if (is_m1_sparse && !is_m2_sparse) {
-        # m1 sparse, m2 dense
-        correls <- cppBetabinPseudoR2_mixed1(Z = ZDB_matrix,
+    } else if (is_m1_sparse && !is_m2_sparse) {
+      null_dist <- cppBetabinPseudoR2_mixed1(Z = ZDB_matrix[, sample.int(ncol(ZDB_matrix))],
                                              m1 = m1_inclusion,
                                              m2 = as.matrix(m2_exclusion),
                                              metric = metric)
-      } else {
-        # m1 dense, m2 sparse
-        correls <- cppBetabinPseudoR2_mixed2(Z = ZDB_matrix,
+    } else {
+      null_dist <- cppBetabinPseudoR2_mixed2(Z = ZDB_matrix[, sample.int(ncol(ZDB_matrix))],
                                              m1 = as.matrix(m1_inclusion),
                                              m2 = m2_exclusion,
                                              metric = metric)
-      }
+    }
 
-      if (is.null(rownames(ZDB_matrix))) {
-        warning("ZDB_matrix has no row names; assigning default event names.")
-        events <- paste0("Event_", seq_len(nrow(ZDB_matrix)))
-      } else {
-        events <- rownames(ZDB_matrix)
-      }
+    data.table::data.table(
+      event = events,
+      pseudo_correlation = correls,
+      null_distribution = null_dist
+    )
+  }
 
-      # Calculate null distribution with the same metric and matrix types
-      if (!is_m1_sparse && !is_m2_sparse) {
-        null_dist <- cppBetabinPseudoR2(Z = ZDB_matrix[, sample.int(ncol(ZDB_matrix))],
-                                        m1 = as.matrix(m1_inclusion),
-                                        m2 = as.matrix(m2_exclusion),
-                                        metric = metric)
-      } else if (is_m1_sparse && is_m2_sparse) {
-        null_dist <- cppBetabinPseudoR2_sparse(Z = ZDB_matrix[, sample.int(ncol(ZDB_matrix))],
-                                               m1 = m1_inclusion,
-                                               m2 = m2_exclusion,
-                                               metric = metric)
-      } else if (is_m1_sparse && !is_m2_sparse) {
-        null_dist <- cppBetabinPseudoR2_mixed1(Z = ZDB_matrix[, sample.int(ncol(ZDB_matrix))],
-                                               m1 = m1_inclusion,
-                                               m2 = as.matrix(m2_exclusion),
-                                               metric = metric)
-      } else {
-        null_dist <- cppBetabinPseudoR2_mixed2(Z = ZDB_matrix[, sample.int(ncol(ZDB_matrix))],
-                                               m1 = as.matrix(m1_inclusion),
-                                               m2 = m2_exclusion,
-                                               metric = metric)
-      }
-
-      results <- data.table::data.table(
-        event = events,
-        pseudo_correlation = correls,
-        null_distribution = null_dist
-
-      )
-    })
+  # Run computation with or without warning suppression
+  if (suppress_warnings) {
+    results <- suppressWarnings(run_computation())
+  } else {
+    results <- run_computation()
   }
 
   results <- na.omit(results)
 
-  cat("Computation completed successfully.\n")
+  if (verbose) message("Computation completed successfully.")
   return(results)
 }
 
@@ -164,7 +175,7 @@ get_pseudo_correlation <- function(ZDB_matrix, m1_inclusion, m2_exclusion, metri
 #' or a sparse dgCMatrix, via a single Rcpp entry point. Logs progress messages
 #' to the R console.
 #' @param M A numeric matrix (base R matrix) or a sparse matrix of class \code{"dgCMatrix"}.
-#' @param verbose Logical. If \code{TRUE} (default), prints progress and informational messages.
+#' @param verbose Logical. If \code{TRUE}, prints progress and informational messages. Default is \code{FALSE}.
 #' @return A numeric vector of length \code{nrow(M)} containing the variance of each row.
 #' @details
 #' Dispatches in C++ between dense and sparse implementations to avoid unnecessary
@@ -183,13 +194,13 @@ get_pseudo_correlation <- function(ZDB_matrix, m1_inclusion, m2_exclusion, metri
 #' Only 32-bit integer indices are supported, due to limitations in R's internal matrix representations.
 #' This function will not work with matrices that exceed the 32-bit integer indexing range.
 #' @export
-get_rowVar <- function(M, verbose=FALSE) {
-  if (! (is.matrix(M) || inherits(M, "dgCMatrix")) ) {
+get_rowVar <- function(M, verbose = FALSE) {
+  if (!(is.matrix(M) || inherits(M, "dgCMatrix"))) {
     stop("`M` must be either a dense numeric matrix or a dgCMatrix.")
   }
-  if(verbose) message("[get_rowVar] Starting computation")
+  if (verbose) message("[get_rowVar] Starting computation")
   result <- rowVariance_cpp(M)
-  if(verbose) message("[get_rowVar] Computation finished")
+  if (verbose) message("[get_rowVar] Computation finished")
   result
 }
 
@@ -200,6 +211,7 @@ get_rowVar <- function(M, verbose=FALSE) {
 #' @param X A numeric matrix where rows are observations and columns are features.
 #' @param cluster_assignments An integer vector of cluster assignments, which must be the same length as the number of rows in \code{X}.
 #' @param n_threads Number of threads to use for parallel processing.
+#' @param verbose Logical. If \code{TRUE}, prints progress and informational messages. Default is \code{FALSE}.
 #'
 #' @note This process can be very slow for large matrices if single-threaded. Use multiple threads to take advantage of parallel computation for significantly faster results.
 #'
@@ -217,13 +229,13 @@ get_rowVar <- function(M, verbose=FALSE) {
 #' print(score)
 #'
 #' @export
-get_silhouette_mean <- function(X, cluster_assignments, n_threads = 1) {
+get_silhouette_mean <- function(X, cluster_assignments, n_threads = 1, verbose = FALSE) {
   stopifnot(is.matrix(X), is.numeric(X))
   stopifnot(is.integer(cluster_assignments) || is.numeric(cluster_assignments))
   stopifnot(nrow(X) == length(cluster_assignments))
 
-  cat("[silhouette_avg] Starting computation...\n")
-  cat(sprintf("[silhouette_avg] Using %d threads...", n_threads), "\n")
+  if (verbose) message("[silhouette_avg] Starting computation...")
+  if (verbose) message("[silhouette_avg] Using ", n_threads, " threads...")
 
   score <- silhouette_avg(X, as.integer(cluster_assignments), as.integer(n_threads))
   return(score)

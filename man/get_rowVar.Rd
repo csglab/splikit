@@ -9,7 +9,7 @@ get_rowVar(M, verbose = FALSE)
 \arguments{
 \item{M}{A numeric matrix (base R matrix) or a sparse matrix of class \code{"dgCMatrix"}.}
 
-\item{verbose}{Logical. If \code{TRUE} (default), prints progress and informational messages.}
+\item{verbose}{Logical. If \code{TRUE}, prints progress and informational messages. Default is \code{FALSE}.}
 }
 \value{
 A numeric vector of length \code{nrow(M)} containing the variance of each row.

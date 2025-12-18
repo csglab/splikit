@@ -9,7 +9,8 @@ get_pseudo_correlation(
   m1_inclusion,
   m2_exclusion,
   metric = "CoxSnell",
-  suppress_warnings = TRUE
+  suppress_warnings = TRUE,
+  verbose = FALSE
 )
 }
 \arguments{
@@ -21,8 +22,9 @@ get_pseudo_correlation(
 
 \item{metric}{Character string specifying which R² metric to compute. Options are "CoxSnell" (default) or "Nagelkerke".}
 
-\item{suppress_warnings}{Logical. If \code{TRUE} (default), suppresses warnings during any warnings triggered during
-computation (e.g., due to ill-conditioned inputs)}
+\item{suppress_warnings}{Logical. If \code{TRUE} (default), suppresses warnings during computation (e.g., due to ill-conditioned inputs).}
+
+\item{verbose}{Logical. If \code{TRUE}, prints progress and informational messages. Default is \code{FALSE}.}
 }
 \value{
 A \code{data.table} with the following columns:

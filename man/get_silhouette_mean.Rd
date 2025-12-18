@@ -4,7 +4,7 @@
 \alias{get_silhouette_mean}
 \title{Compute Average Silhouette Width with Logging}
 \usage{
-get_silhouette_mean(X, cluster_assignments, n_threads = 1)
+get_silhouette_mean(X, cluster_assignments, n_threads = 1, verbose = FALSE)
 }
 \arguments{
 \item{X}{A numeric matrix where rows are observations and columns are features.}
@@ -12,6 +12,8 @@ get_silhouette_mean(X, cluster_assignments, n_threads = 1)
 \item{cluster_assignments}{An integer vector of cluster assignments, which must be the same length as the number of rows in \code{X}.}
 
 \item{n_threads}{Number of threads to use for parallel processing.}
+
+\item{verbose}{Logical. If \code{TRUE}, prints progress and informational messages. Default is \code{FALSE}.}
 }
 \value{
 A single numeric value: the average silhouette score.

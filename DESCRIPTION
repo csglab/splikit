@@ -1,24 +1,26 @@
 Package: splikit
-Title: A toolkit for analysing RNA splicing in scRNA-seq data
+Title: Analysing RNA Splicing in scRNA-Seq Data
 Version: 1.0.6
 Authors@R: 
     person("Arsham", "Mikaeili Namini", , "arsham.mikaeilinamini@mail.mcgill.ca", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-9453-6951"))
-Description: 
-  Splikit /ˈsplaɪ.kɪt/ is a toolkit designed for the analysis of high-dimensional single-cell 
-  splicing data. It provides a framework to extract and work with ratio-based data structures 
-  derived from single-cell RNA sequencing experiments. The package avoids the need for bulky 
-  S4 objects by offering direct and efficient manipulation of matrices. Core functionalities 
-  are implemented in C++ via Rcpp to ensure high performance and scalability on large datasets.
-URL: https://arshammik.github.io/splikit/, https://github.com/Arshammik/splikit
-BugReports: https://github.com/Arshammik/splikit/issues
+Description:
+  Provides analysis of high-dimensional single-cell splicing data.
+  Offers a framework to extract and work with ratio-based data structures
+  derived from single-cell RNA sequencing experiments. Avoids the need for bulky
+  S4 objects by offering direct and efficient manipulation of matrices. Core
+  functionalities are implemented in C++ via 'Rcpp' to ensure high performance
+  and scalability on large datasets.
+URL: https://github.com/csglab/splikit
+BugReports: https://github.com/csglab/splikit/issues
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
-Imports: Matrix, data.table, methods, stats, Rcpp, RcppArmadillo
+RoxygenNote: 7.3.3
+Imports: Matrix, data.table, methods, stats, Rcpp
 LinkingTo: Rcpp, RcppArmadillo
-Suggests: testthat (>= 3.0.0)
+Suggests: testthat (>= 3.0.0), knitr, rmarkdown
+VignetteBuilder: knitr
 Config/testthat/edition: 3
 NeedsCompilation: yes
 Packaged: 2025-05-09 22:41:00 UTC; arsham79

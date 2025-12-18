@@ -11,3 +11,4 @@
 ^pkgdown$
 ^\.github$
 ^build_pkgdown_site\.R$
+^CLAUDE\.md$
