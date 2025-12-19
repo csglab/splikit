@@ -10,7 +10,6 @@ make_m2(
   batch_size = 5000,
   memory_threshold = 2e+09,
   force_fast = FALSE,
-  multi_thread = FALSE,
   n_threads = 1,
   use_cpp = TRUE,
   verbose = FALSE
@@ -30,11 +29,8 @@ summary before switching to batched processing (default: 2e9, which is ~93\% of 
 \item{force_fast}{A logical flag to force fast processing regardless of size estimates (default: FALSE).
 WARNING: This may cause memory errors on large datasets.}
 
-\item{multi_thread}{A logical flag to enable parallel processing for batched operations (default: FALSE).
-Only used when batched processing is triggered. Requires parallel package.}
-
-\item{n_threads}{Number of threads for C++ parallel processing (default: 1).
-Only used when use_cpp = TRUE.}
+\item{n_threads}{Number of threads for parallel processing (default: 1).
+Used for C++ implementation and batched R processing. Values > 1 require parallel package for batched mode.}
 
 \item{use_cpp}{Logical flag to use fast C++ implementation (default: TRUE).
 Falls back to R implementation if FALSE.}

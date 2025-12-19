@@ -8,7 +8,7 @@ find_variable_genes(
   gene_expression_matrix,
   method = "vst",
   n_threads = 1,
-  verbose = TRUE,
+  verbose = FALSE,
   ...
 )
 }
@@ -21,7 +21,7 @@ find_variable_genes(
 
 \item{n_threads}{If OpenMP is available for your device, the function suggests using multi-thread processing for even faster computation (only for sum_deviance method).}
 
-\item{verbose}{Logical. If \code{TRUE} (default), prints progress and informational messages.}
+\item{verbose}{Logical. If \code{TRUE}, prints progress and informational messages. Default is \code{FALSE}.}
 
 \item{...}{Additional arguments (currently unused).}
 }
@@ -42,8 +42,8 @@ toy_obj <- load_toy_M1_M2_object()
 
 # getting high variable genes
 HVG_VST <- find_variable_genes(toy_obj$gene_expression, method = "vst")
-HVG_DEV <- find_variable_genes(toy_obj$gene_expression,
-                               method = "sum_deviance")
+# sum_deviance method
+HVG_DEV <- find_variable_genes(toy_obj$gene_expression, method = "sum_deviance")
 
 # Using multi-threading for faster computation (sum_deviance method only)
 HVG_DEV_MT <- find_variable_genes(toy_obj$gene_expression, 

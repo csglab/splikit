@@ -71,7 +71,9 @@ List fit_logistic_regression(const vec& x, const vec& m1, const vec& m2) {
     vec XtWz = X.t() * W * z;
     
     vec beta_new;
-    bool solved = solve(beta_new, XtWX, XtWz);
+    // Use no_approx option to disable approximation for ill-conditioned matrices
+    // Warnings are handled at R level via suppressWarnings()
+    bool solved = solve(beta_new, XtWX, XtWz, solve_opts::no_approx);
     if (!solved) {
       return List::create(Named("beta") = NumericVector::create(NA_REAL, NA_REAL),
                           Named("deviance") = NA_REAL,

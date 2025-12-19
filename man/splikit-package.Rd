@@ -3,11 +3,11 @@
 \docType{package}
 \name{splikit-package}
 \alias{splikit-package}
-\title{splikit: A Toolkit for Analysing RNA Splicing in scRNA-Seq Data}
+\title{splikit: Analysing RNA Splicing in scRNA-Seq Data}
 \description{
 \if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
 
-A toolkit designed for the analysis of high-dimensional single-cell splicing data. Provides a framework to extract and work with ratio-based data structures derived from single-cell RNA sequencing experiments. Offers both a modern R6 object-oriented interface and direct matrix manipulation functions. Core functionalities are implemented in C++ via 'Rcpp' to ensure high performance and scalability on large datasets.
+Provides analysis of high-dimensional single-cell splicing data. Offers a framework to extract and work with ratio-based data structures derived from single-cell RNA sequencing experiments. Provides both a modern R6 object-oriented interface and direct matrix manipulation functions. Core functionalities are implemented in C++ via 'Rcpp' to ensure high performance and scalability on large datasets.
 }
 \seealso{
 Useful links:

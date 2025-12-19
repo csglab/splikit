@@ -4,7 +4,7 @@
 #' @param m2_matrix A matrix representing the exclusion matrix. Rows are events, columns are barcodes.
 #' @param n_threads If the module OpenPM is available for your device, the function suggests using multi-thread processing for even faster computation.
 #' @param min_row_sum A numeric value specifying the minimum row sum threshold for filtering events. Defaults to 50.
-#' @param verbose Logical. If \code{TRUE} (default), prints progress and informational messages.
+#' @param verbose Logical. If \code{TRUE}, prints progress and informational messages. Default is \code{FALSE}.
 #' @param ... Additional arguments to be passed.
 #'
 #' @return A \code{data.table} containing the events and their corresponding sum deviance values.
@@ -19,8 +19,7 @@
 #'  # printing the results
 #'  print(HVE[order(-sum_deviance)])
 #' @export
-find_variable_events <- function(m1_matrix, m2_matrix = NULL, min_row_sum = 50, n_threads=1, verbose=TRUE, ...) {
-
+find_variable_events <- function(m1_matrix, m2_matrix = NULL, min_row_sum = 50, n_threads = 1, verbose = FALSE, ...) {
 
   # Handle SplikitObject input
   if (inherits(m1_matrix, "SplikitObject")) {
@@ -72,7 +71,7 @@ find_variable_events <- function(m1_matrix, m2_matrix = NULL, min_row_sum = 50, 
   meta <- temp_current_barcodes
 
   libraries <- unique(meta$ID)
-  cat("There are", length(libraries), "libraries detected...\n")
+  if (verbose) message("There are ", length(libraries), " libraries detected...")
 
   # Initialize deviance sum vector
   sum_deviances <- numeric(nrow(m1_matrix))
@@ -90,8 +89,8 @@ find_variable_events <- function(m1_matrix, m2_matrix = NULL, min_row_sum = 50, 
     })
     deviance_values <- c(deviance_values)
     names(deviance_values) <- rownames(M1_sub)
-    if(verbose) {
-      cat("Calculating the deviances for sample", lib, "has been completed!\n")
+    if (verbose) {
+      message("Calculating the deviances for sample ", lib, " has been completed!")
     }
     return(deviance_values)
   })
@@ -115,7 +114,7 @@ find_variable_events <- function(m1_matrix, m2_matrix = NULL, min_row_sum = 50, 
 #'   \code{"vst"} uses a variance-stabilizing transformation to identify variable genes.
 #'   \code{"sum_deviance"} computes per-library deviances and combines them with a row variance metric.
 #' @param n_threads If OpenMP is available for your device, the function suggests using multi-thread processing for even faster computation (only for sum_deviance method).
-#' @param verbose Logical. If \code{TRUE} (default), prints progress and informational messages.
+#' @param verbose Logical. If \code{TRUE}, prints progress and informational messages. Default is \code{FALSE}.
 #' @param ... Additional arguments (currently unused).
 #'
 #' @return A \code{data.table} containing gene names (column \code{events}) and computed metrics.
@@ -128,9 +127,9 @@ find_variable_events <- function(m1_matrix, m2_matrix = NULL, min_row_sum = 50, 
 #'
 #' # getting high variable genes
 #' HVG_VST <- find_variable_genes(toy_obj$gene_expression, method = "vst")
-#' HVG_DEV <- find_variable_genes(toy_obj$gene_expression,
-#'                                method = "sum_deviance")
-#' 
+#' # sum_deviance method
+#' HVG_DEV <- find_variable_genes(toy_obj$gene_expression, method = "sum_deviance")
+#'
 #' # Using multi-threading for faster computation (sum_deviance method only)
 #' HVG_DEV_MT <- find_variable_genes(toy_obj$gene_expression, 
 #'                                   method = "sum_deviance", 
@@ -145,7 +144,7 @@ find_variable_events <- function(m1_matrix, m2_matrix = NULL, min_row_sum = 50, 
 #' @import Matrix
 #' @importClassesFrom Matrix dgCMatrix dsCMatrix dgTMatrix dsTMatrix
 #' @export
-find_variable_genes <- function(gene_expression_matrix, method = "vst", n_threads = 1, verbose = TRUE, ...) {
+find_variable_genes <- function(gene_expression_matrix, method = "vst", n_threads = 1, verbose = FALSE, ...) {
   # adding the vst method as the default
   method <- match.arg(method, choices = c("vst", "sum_deviance"))
 
@@ -155,7 +154,7 @@ find_variable_genes <- function(gene_expression_matrix, method = "vst", n_thread
   }
 
   if (method == "vst") {
-    if(verbose) cat("The method we are using is vst (Seurat)...\n")
+    if (verbose) message("The method we are using is vst (Seurat)...")
     if (!exists("standardizeSparse_variance_vst")) {
       stop("The function 'standardizeSparse_variance_vst' is not available. Check your C++ source files.")
     }
@@ -167,7 +166,7 @@ find_variable_genes <- function(gene_expression_matrix, method = "vst", n_thread
     rez <- data.table::data.table(events = rownames(gene_expression_matrix),
                                   standardize_variance = rez_vector)
   } else {
-    if(verbose) cat("The method we are using is like deviance summarion per library...\n")
+    if (verbose) message("The method we are using is like deviance summarion per library...")
 
     # Filter rows based on minimum row sum criteria
     to_keep_features <- which(rowSums(gene_expression_matrix) > 0)
@@ -182,7 +181,7 @@ find_variable_genes <- function(gene_expression_matrix, method = "vst", n_thread
     meta <- temp_current_barcodes
 
     libraries <- unique(meta$ID)
-    cat("There are", length(libraries), "libraries detected...\n")
+    if (verbose) message("There are ", length(libraries), " libraries detected...")
 
     # Initialize deviance sum vector with gene names
     sum_deviances <- numeric(nrow(gene_expression_matrix))
@@ -207,8 +206,8 @@ find_variable_genes <- function(gene_expression_matrix, method = "vst", n_thread
         })
         deviance_values <- c(deviance_values)
         names(deviance_values) <- rownames(gene_expression_matrix_sub)
-        if(verbose) {
-          cat("Calculating the deviances for sample", lib, "has been completed!\n")
+        if (verbose) {
+          message("Calculating the deviances for sample ", lib, " has been completed!")
         }
         return(deviance_values)
       })

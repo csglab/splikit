@@ -9,7 +9,7 @@ find_variable_events(
   m2_matrix = NULL,
   min_row_sum = 50,
   n_threads = 1,
-  verbose = TRUE,
+  verbose = FALSE,
   ...
 )
 }
@@ -22,7 +22,7 @@ find_variable_events(
 
 \item{n_threads}{If the module OpenPM is available for your device, the function suggests using multi-thread processing for even faster computation.}
 
-\item{verbose}{Logical. If \code{TRUE} (default), prints progress and informational messages.}
+\item{verbose}{Logical. If \code{TRUE}, prints progress and informational messages. Default is \code{FALSE}.}
 
 \item{...}{Additional arguments to be passed.}
 }

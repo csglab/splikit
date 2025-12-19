@@ -113,15 +113,14 @@ SplikitObject <- R6::R6Class("SplikitObject",
     #' @param batch_size Number of groups per batch for memory management (default: 5000).
     #' @param memory_threshold Maximum rows before switching to batched processing.
     #' @param force_fast Force fast processing regardless of size (default: FALSE).
-    #' @param multi_thread Use parallel processing for batched operations (default: FALSE).
-    #' @param n_threads Number of threads for C++ OpenMP parallelization (default: 1).
+    #' @param n_threads Number of threads for parallel processing (default: 1).
     #' @param use_cpp Use fast C++ implementation (default: TRUE).
     #' @param verbose Print progress messages (default: FALSE).
     #'
     #' @return Self (invisibly), for method chaining.
     makeM2 = function(batch_size = 5000, memory_threshold = 2e9,
-                      force_fast = FALSE, multi_thread = FALSE,
-                      n_threads = 1, use_cpp = TRUE, verbose = FALSE) {
+                      force_fast = FALSE, n_threads = 1,
+                      use_cpp = TRUE, verbose = FALSE) {
 
       if (is.null(self$m1)) {
         private$error("M1 matrix not initialized")
@@ -136,7 +135,6 @@ SplikitObject <- R6::R6Class("SplikitObject",
         batch_size = batch_size,
         memory_threshold = memory_threshold,
         force_fast = force_fast,
-        multi_thread = multi_thread,
         n_threads = n_threads,
         use_cpp = use_cpp,
         verbose = verbose

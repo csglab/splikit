@@ -8,7 +8,7 @@
 
 ## **Requirements**
 
--   R version 3.5.0 or later.
+-   [R version 4.1.0](https://www.R-project.org/) or later.
 -   R libraries: [Rcpp](https://CRAN.R-project.org/package=Rcpp), [RcppArmadillo](https://CRAN.R-project.org/package=RcppArmadillo), [Matrix](https://CRAN.R-project.org/package=Matrix), [data.table](https://CRAN.R-project.org/package=data.table), [R6](https://CRAN.R-project.org/package=R6)
 
 

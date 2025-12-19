@@ -115,7 +115,6 @@ Compute the M2 exclusion matrix from M1 and eventData.
   batch_size = 5000,
   memory_threshold = 2e+09,
   force_fast = FALSE,
-  multi_thread = FALSE,
   n_threads = 1,
   use_cpp = TRUE,
   verbose = FALSE
@@ -131,9 +130,7 @@ Compute the M2 exclusion matrix from M1 and eventData.
 
 \item{\code{force_fast}}{Force fast processing regardless of size (default: FALSE).}
 
-\item{\code{multi_thread}}{Use parallel processing for batched operations (default: FALSE).}
-
-\item{\code{n_threads}}{Number of threads for C++ OpenMP parallelization (default: 1).}
+\item{\code{n_threads}}{Number of threads for parallel processing (default: 1).}
 
 \item{\code{use_cpp}}{Use fast C++ implementation (default: TRUE).}
 

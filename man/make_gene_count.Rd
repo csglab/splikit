@@ -8,7 +8,8 @@ make_gene_count(
   expression_dirs,
   sample_ids,
   whitelist_barcodes = NULL,
-  use_internal_whitelist = TRUE
+  use_internal_whitelist = TRUE,
+  verbose = FALSE
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ barcode file (e.g., \code{barcodes.tsv} or \code{barcodes_filtered.tsv}) if avai
 \item{use_internal_whitelist}{Logical (default \code{TRUE}). If \code{TRUE} and \code{whitelist_barcodes} is \code{NULL},
 the function will attempt to use the default filtered barcode list from the input directory.
 If \code{FALSE}, no internal filtration will be applied unless a whitelist is explicitly provided.}
+
+\item{verbose}{Logical. If \code{TRUE}, prints progress and informational messages. Default is \code{FALSE}.}
 }
 \value{
 If a single sample is provided, returns a sparse matrix of class \code{"dgCMatrix"} with genes as rows and barcodes as columns.
