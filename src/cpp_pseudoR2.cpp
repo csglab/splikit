@@ -106,6 +106,33 @@ List fit_logistic_regression(const vec& x, const vec& m1, const vec& m2) {
                       Named("nobs") = nobs);
 }
 
+// Function: Fit an intercept-only binomial GLM.
+// Returns a List containing beta (intercept), deviance, and number of observations.
+List fit_logistic_regression_null(const vec& m1, const vec& m2) {
+  int nobs = m1.n_elem;
+  vec n_trials = m1 + m2;
+  
+  double sum_y = sum(m1);
+  double sum_n = sum(n_trials);
+  
+  // Empirical probability clamped by EPS
+  double p_hat = sum_y / sum_n;
+  p_hat = std::min(1.0 - EPS, std::max(EPS, p_hat));
+  
+  vec mu = n_trials * p_hat;
+  
+  double dev = 0.0;
+  for (int i = 0; i < nobs; i++) {
+    dev += deviance_obs(m1(i), n_trials(i), mu(i));
+  }
+  
+  double beta0 = std::log(p_hat / (1.0 - p_hat));
+  
+  return List::create(Named("beta") = NumericVector::create(beta0),
+                      Named("deviance") = dev,
+                      Named("nobs") = nobs);
+}
+
 // Template function to handle both dense and sparse matrices
 template<typename T1, typename T2>
 NumericVector cppBetabinPseudoR2_impl(const arma::mat& Z,
@@ -174,13 +201,11 @@ NumericVector cppBetabinPseudoR2_impl(const arma::mat& Z,
       // Full model: predictor + intercept.
       fit_full = fit_logistic_regression(x, m1_sub, m2_sub);
       // Reduced model: intercept only.
-      vec ones(n_valid, fill::ones);
-      fit_reduced = fit_logistic_regression(ones, m1_sub, m2_sub);
+      fit_reduced = fit_logistic_regression_null(m1_sub, m2_sub);
     } else {
       // For now, use the same logistic regression fit as an approximation.
       fit_full = fit_logistic_regression(x, m1_sub, m2_sub);
-      vec ones(n_valid, fill::ones);
-      fit_reduced = fit_logistic_regression(ones, m1_sub, m2_sub);
+      fit_reduced = fit_logistic_regression_null(m1_sub, m2_sub);
     }
     
     // Check if the regression converged.

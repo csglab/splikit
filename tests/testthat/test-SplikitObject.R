@@ -637,3 +637,31 @@ test_that("n_threads parameter is passed correctly", {
   result <- obj$findVariableEvents(min_row_sum = 100, n_threads = 2, verbose = FALSE)
   expect_true(nrow(result) > 0)
 })
+
+test_that("SplikitObject$getPseudoCorrelation executes correctly", {
+  test_data <- load_toy_M1_M2_object()
+
+  m2 <- make_m2(
+    m1_inclusion_matrix = test_data$m1,
+    eventdata = test_data$eventdata,
+    verbose = FALSE
+  )
+
+  obj <- SplikitObject$new(
+    m1 = test_data$m1,
+    m2 = m2,
+    eventData = test_data$eventdata
+  )
+  
+  # Create a valid ZDB matrix
+  n_events <- nrow(obj$m1)
+  n_cells <- ncol(obj$m1)
+  set.seed(42)
+  ZDB_matrix <- matrix(rnorm(n_events * n_cells), nrow = n_events, ncol = n_cells)
+  
+  res <- obj$getPseudoCorrelation(ZDB_matrix = ZDB_matrix, suppress_warnings = TRUE)
+  expect_true(data.table::is.data.table(res))
+  # With pure random data, some might be NA and removed, check columns
+  expect_true(all(c("event", "pseudo_correlation", "null_distribution") %in% names(res)))
+})
+
