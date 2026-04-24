@@ -237,10 +237,10 @@ make_junction_ab <- function(STARsolo_SJ_dirs, white_barcode_lists = NULL, sampl
   final_results <- lapply(results, function(x) x$result)
   summary_table <- do.call(rbind, lapply(results, function(x) x$summary))
 
-  # Print summary table
+  # Summary table (emitted via message so it can be suppressed)
   if (verbose) {
-    message("\nSummary of Processed Samples in M1 matrix:")
-    print(summary_table)
+    message("\nSummary of Processed Samples in M1 matrix:\n",
+            paste(utils::capture.output(print(summary_table)), collapse = "\n"))
   }
 
   # Always return a named list, even for a single sample
@@ -514,7 +514,7 @@ make_m1 <- function(junction_ab_object, min_counts = 1, verbose = FALSE) {
         m1_raw <- cbind(m1_raw, final_matrix)
 
         # Log progress
-        if(verbose) cat("Processed matrix:", names(junction_ab_object)[j], "\n")
+        if (verbose) message("Processed matrix: ", names(junction_ab_object)[j])
 
       }, error = function(e) {
         stop("Error processing sample ", j, " (", names(junction_ab_object)[j], "): ", e$message, call. = FALSE)
@@ -1252,10 +1252,10 @@ make_gene_count <- function(expression_dirs, sample_ids, whitelist_barcodes = NU
   final_results <- lapply(results, function(x) x$gene_expression)
   summary_table <- do.call(rbind, lapply(results, function(x) x$summary))
 
-  # Print summary table
+  # Summary table (emitted via message so it can be suppressed)
   if (verbose) {
-    message("\nSummary of Processed Samples:")
-    print(summary_table)
+    message("\nSummary of Processed Samples:\n",
+            paste(utils::capture.output(print(summary_table)), collapse = "\n"))
   }
 
   # Return results
@@ -1434,8 +1434,8 @@ make_velo_count <- function(velocyto_dirs, sample_ids, whitelist_barcodes = NULL
     unspliced_combined <- do.call(cbind, lapply(results, function(x) x$unspliced))
 
     if (verbose) {
-      message("\nSummary of Merged Velocyto Counts:")
-      print(summary_table)
+      message("\nSummary of Merged Velocyto Counts:\n",
+              paste(utils::capture.output(print(summary_table)), collapse = "\n"))
     }
 
     return(list(
@@ -1444,10 +1444,10 @@ make_velo_count <- function(velocyto_dirs, sample_ids, whitelist_barcodes = NULL
     ))
   }
 
-  # Print summary table if not merging
+  # Summary table if not merging (emitted via message so it can be suppressed)
   if (verbose) {
-    message("\nSummary of Processed Samples:")
-    print(summary_table)
+    message("\nSummary of Processed Samples:\n",
+            paste(utils::capture.output(print(summary_table)), collapse = "\n"))
   }
 
   # Return individual results if not merging

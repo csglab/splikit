@@ -1,3 +1,16 @@
+# splikit 2.2.1
+
+## CRAN Compliance
+* Addressed CRAN reviewer feedback on the 2.0.0 submission: replaced the
+  un-suppressable `print(summary_table)` calls in `make_junction_ab()`,
+  `make_gene_count()`, and `make_velo_count()` with
+  `message(paste(capture.output(...), collapse = "\n"))`. The summary now
+  respects `suppressMessages()` and stays behind the `verbose = TRUE`
+  guard. A stray `if (verbose) cat(...)` in `make_m1()` was likewise
+  converted to `message()` for consistency.
+* Title and Description already had the redundant "A toolkit designed
+  for" phrasing removed in 2.0.1; no further action needed there.
+
 # splikit 2.2.0
 
 ## New Features

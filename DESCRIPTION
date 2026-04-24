@@ -1,6 +1,6 @@
 Package: splikit
 Title: Analysing RNA Splicing in scRNA-Seq Data
-Version: 2.2.0
+Version: 2.2.1
 Authors@R:
     person("Arsham", "Mikaeili Namini", , "arsham.mikaeilinamini@mail.mcgill.ca", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-9453-6951"))
