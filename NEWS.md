@@ -1,3 +1,15 @@
+# splikit 2.2.0
+
+## New Features
+* **`plot_exclusive_junctions_event()`** - sibling of
+  `plot_exclusive_junctions()` that sources the drawn arcs from a
+  `splikit` eventdata table. Exon structure still comes from the GTF and
+  exclusivity is computed gene-wide from the annotation, but only junctions
+  whose `(i.start, i.end)` coordinates are observed in `eventdata` are
+  drawn. If `eventdata` lacks a `gene_name` column the function runs
+  `make_eventdata_plus()` internally using the supplied GTF path. The plot
+  is rendered directly to the current graphics device (no `out_file`).
+
 # splikit 2.1.0
 
 ## New Features
