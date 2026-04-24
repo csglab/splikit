@@ -14,77 +14,57 @@ plot_exclusive_junctions(
 )
 }
 \arguments{
-\item{gtf}{Either a path (character) to an Ensembl-style GTF file, or a
-\code{data.table} already loaded from one. When a path is given, a fast
-\code{grep}-based prefilter is tried first (Linux/macOS); it falls back to a
-full \code{fread()} if the prefilter is unavailable or returns nothing. When a
-\code{data.table} is passed it must contain the nine standard GTF columns
-(either \code{seqname}/\code{attr} or \code{seqid}/\code{attribute} naming is accepted).}
+\item{gtf}{Either a path to an Ensembl- or RefSeq-style GTF, or a
+pre-loaded \code{data.table} of GTF rows.}
 
-\item{target_gene}{Character. Gene name (matches the \code{gene_name} attribute
-in the GTF), e.g. \code{"Tpm1"}.}
+\item{target_gene}{Gene symbol (matches \code{gene_name}, or \code{gene_id} if no
+\code{gene_name} is present).}
 
-\item{show_exclusive}{Logical (default \code{TRUE}). If \code{TRUE}, only transcripts
-that own at least one exclusive junction are plotted; if \code{FALSE}, every
-transcript of the gene is drawn.}
+\item{show_exclusive}{Logical (default \code{TRUE}). Restrict to transcripts
+that own >= 1 exclusive junction.}
 
-\item{transcript}{Character vector of transcript names to pin the plot to
-(e.g. \code{"Tpm1-205"} or \code{c("Tpm1-220", "Tpm1-221")}). When supplied this
-overrides \code{show_exclusive}. Exclusivity is still computed against the
-whole gene.}
+\item{transcript}{Optional character vector of transcript names to pin
+the plot to (overrides \code{show_exclusive}).}
 
-\item{curvature}{Numeric. Arc-height knob passed to
-\code{ggplot2::geom_curve()}. Values near \code{0} yield flat arcs; more negative
-values yield taller arcs. Default \code{-0.2}.}
+\item{curvature}{Numeric, arc-height knob for \code{ggplot2::geom_curve()}.}
 
-\item{out_file}{Optional character. If given, the plot is written to this
-file via \code{ggplot2::ggsave()} (format inferred from the extension).}
+\item{out_file}{Optional character. If given, the plot is also written
+to this file with \code{ggplot2::ggsave()}.}
 }
 \value{
-A list with elements \code{plot} (the \code{ggplot} object), \code{junctions}
-(per-transcript junction table with an \code{exclusive} column), \code{exons} (the
-exon table used for drawing), and \code{tx_order} (transcript-to-y mapping
-with Ensembl ids).
+An S3 object of class \code{"splikit_junction_plot"} (a list) with
+components:
+\describe{
+\item{\code{plot}}{A \code{ggplot} object.}
+\item{\code{info}}{A \code{data.table} with one row per drawn (transcript,
+junction) pair and columns \code{gene_name}, \code{gene_id},
+\code{transcript_name}, \code{transcript_id}, \code{chr},
+\code{strand}, \code{j_start}, \code{j_end}, \code{j_width},
+\code{exclusive}, \code{n_tx_with_junction},
+\code{observed_in_eventdata}, \code{row_names_mtx},
+\code{is_annot}. For GTF-only calls the last three are \code{NA}.}
+\item{\code{exons}, \code{junctions}, \code{tx_order}}{The underlying tables used to
+build the plot, retained for advanced users.}
+}
+Printing the object renders the plot and then prints \code{info}.
 }
 \description{
 Draws a gene-model view of a gene's transcripts (one row per transcript)
 with splice junctions rendered as arcs above each row. Junctions used by a
-single transcript of the gene ("transcript-exclusive") are highlighted in
-solid black; junctions shared with other transcripts are drawn as thin grey
-arcs. The y-axis labels show \code{transcript_name} over \code{transcript_id}
-(two lines), so the Ensembl id is visible next to the usual transcript name.
-}
-\details{
-Exclusivity is computed against every transcript of the gene in the GTF,
-regardless of which transcripts end up being drawn. That means the black
-arcs always reflect gene-wide exclusivity, even when the view is restricted
-via \code{show_exclusive = TRUE} or \code{transcript = "..."}.
-
-Plotting behaviour by flag:
-\itemize{
-\item \code{show_exclusive = TRUE} (default): restrict the plot to transcripts that
-own at least one exclusive junction.
-\item \code{show_exclusive = FALSE}: draw every transcript of the gene.
-\item \code{transcript = "Tpm1-205"} (or a vector of names): pin the plot to those
-transcripts; overrides \code{show_exclusive}.
-}
+single transcript of the gene ("transcript-exclusive") are drawn as solid
+black arcs; shared junctions as thin grey arcs. Works with both
+Ensembl-style and RefSeq-style GTFs: if a row has no \code{gene_name}
+attribute, \code{gene_id} is used; if no \code{transcript_name}, \code{transcript_id}
+is used.
 }
 \section{Required packages}{
 
-Requires the \pkg{ggplot2} package, listed in \code{Suggests}. Install it before
-calling this function.
+Requires the \pkg{ggplot2} package (declared in \code{Suggests}).
 }
 
 \examples{
 \dontrun{
-  res <- plot_exclusive_junctions(
-    gtf         = "Mus_musculus.GRCm39.110.gtf",
-    target_gene = "Tpm1",
-    out_file    = "Tpm1_exclusive_junctions.png"
-  )
-  # pin to a single transcript
-  plot_exclusive_junctions(gtf = res_gtf_dt, target_gene = "Tpm1",
-                           transcript = "Tpm1-220")
+  plot_exclusive_junctions("Mus_musculus.GRCm39.110.gtf", "Tpm1")
 }
 
 }

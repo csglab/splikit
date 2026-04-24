@@ -17,6 +17,7 @@ if (getRversion() >= "2.15.1") {
     "transcript_id", "transcript_name", "exon_number",
     "j_start", "j_end", "exclusive", "targeted",
     "n_tx", "has_excl", "y", "y_label", "xend", "attr", "seqname",
-    "i.start", "i.end"
+    "i.start", "i.end", "row_names_mtx", "is_annot",
+    "observed_in_eventdata"
   ))
 }

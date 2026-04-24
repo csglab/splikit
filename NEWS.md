@@ -1,3 +1,31 @@
+# splikit 2.3.0
+
+## New Features
+* **RefSeq GTF support in plotting functions.**
+  `plot_exclusive_junctions()` and `plot_exclusive_junctions_event()` now
+  accept RefSeq-style GTFs that lack `gene_name` / `transcript_name`
+  attributes. The internal attribute extractor tries `gene_name` ->
+  `gene_id` -> `gene`, and `transcript_name` -> `transcript_id`, so a
+  RefSeq annotation like NCBI's GCF_*_GRCh38 file works with no manual
+  preprocessing.
+* **Structured return value.**
+  Both plotting functions now return an S3 object of class
+  `splikit_junction_plot` with components `$plot` (ggplot),
+  `$info` (tidy per-junction data.table), plus the underlying
+  `exons` / `junctions` / `tx_order` tables. The `info` data.table
+  includes `gene_name`, `gene_id`, `transcript_name`, `transcript_id`,
+  `chr`, `strand`, `j_start`, `j_end`, `j_width`, `exclusive`,
+  `n_tx_with_junction`, `observed_in_eventdata`, `row_names_mtx`, and
+  `is_annot` for straightforward downstream analysis.
+* **S3 `print()` method** for the new class: rendering the plot and
+  printing `info` when the object is auto-printed at the REPL.
+
+## Internals
+* Extracted shared helpers (`.gtf_attr`, `.load_gene_gtf`, `.gene_exons`,
+  `.tx_junctions`, `.order_transcripts`, `.build_plot`, `.build_info`)
+  so the GTF-only and eventdata-based plots now share a single
+  implementation path.
+
 # splikit 2.2.1
 
 ## CRAN Compliance

@@ -14,62 +14,38 @@ plot_exclusive_junctions_event(
 )
 }
 \arguments{
-\item{target_gene}{Gene name to plot, e.g. \code{"Tpm1"}.}
+\item{target_gene}{Gene symbol to plot.}
 
-\item{GTF}{Either a path (character) to an Ensembl-style GTF file, or a
-\code{data.table} already loaded from one. Used for transcript / exon
-structure, and also for \code{\link[=make_eventdata_plus]{make_eventdata_plus()}} when \code{eventdata} is raw.}
+\item{GTF}{Either a GTF path or a pre-loaded \code{data.table}.}
 
-\item{eventdata}{A \code{splikit} eventdata \code{data.table}. Must contain
-\code{i.start} and \code{i.end} junction coordinates and (after
-\code{\link[=make_eventdata_plus]{make_eventdata_plus()}}) \code{gene_name}. If \code{gene_name} is absent, the
-function will run \code{\link[=make_eventdata_plus]{make_eventdata_plus()}} on \code{eventdata} using \code{GTF}
-(which must then be a path).}
+\item{eventdata}{A \code{splikit} eventdata \code{data.table}.}
 
-\item{show_exclusive}{Logical (default \code{TRUE}). Same meaning as in
-\code{\link[=plot_exclusive_junctions]{plot_exclusive_junctions()}}.}
-
-\item{transcript}{Optional character vector of transcript names to pin the
-plot to. Overrides \code{show_exclusive} when supplied.}
-
-\item{curvature}{Numeric. Arc-height knob for \code{ggplot2::geom_curve()}.}
+\item{show_exclusive, transcript, curvature}{See \code{\link[=plot_exclusive_junctions]{plot_exclusive_junctions()}}.}
 }
 \value{
-Invisibly, a list with \code{plot} (the ggplot object), \code{junctions}
-(per-transcript observed junctions with an \code{exclusive} column), \code{exons},
-\code{tx_order}, and \code{novel_junction_count} (how many eventdata junctions did
-not match any annotated intron).
+An S3 object of class \code{"splikit_junction_plot"} with the same
+structure as in \code{\link[=plot_exclusive_junctions]{plot_exclusive_junctions()}}, plus
+\code{novel_junction_count} for the unannotated observed junctions. The
+\code{info$observed_in_eventdata} column is \code{TRUE} for all rows, and
+\code{row_names_mtx} / \code{is_annot} are populated from \code{eventdata} when
+available.
 }
 \description{
-Sibling of \code{\link[=plot_exclusive_junctions]{plot_exclusive_junctions()}} that restricts the arcs to the
-splice junctions actually observed in a \code{splikit} \code{eventdata} table. Exon
-structure still comes from the GTF, but only junctions whose
-\verb{(i.start, i.end)} coordinates match an annotated intron of some
-transcript are drawn. Exclusivity (black vs grey) is computed against every
-transcript of the gene in the GTF, so the styling reflects true annotation
-exclusivity even if other transcripts' junctions were not observed in the
-data.
+Sibling of \code{\link[=plot_exclusive_junctions]{plot_exclusive_junctions()}} that restricts drawn arcs to
+junctions present in a \code{splikit} eventdata table. Exon structure and
+exclusivity are still derived from the GTF, so a black arc means the
+junction is both transcript-exclusive in the annotation and observed in
+the data.
 }
 \details{
-The plot is rendered to the current graphics device (no \code{out_file}
-argument). If \code{eventdata} does not yet have a \code{gene_name} column, the
-function calls \code{\link[=make_eventdata_plus]{make_eventdata_plus()}} internally using \code{GTF} (a path is
-required in that case). Observed junctions that do not match any annotated
-intron are dropped with an informational \code{message()}.
+Works with both Ensembl-style and RefSeq-style GTFs. If \code{eventdata}
+lacks a \code{gene_name} column the function runs \code{\link[=make_eventdata_plus]{make_eventdata_plus()}}
+internally (requires \code{GTF} to be a path in that case). Observed
+junctions not matching any annotated intron are dropped with a message
+and their count is reported as \code{novel_junction_count}.
 }
 \section{Required packages}{
 
 Requires the \pkg{ggplot2} package (declared in \code{Suggests}).
 }
 
-\examples{
-\dontrun{
-  eventdata <- readRDS("evendata.rds")
-  plot_exclusive_junctions_event(
-    target_gene = "Tpm1",
-    GTF         = "Mus_musculus.GRCm39.110.gtf",
-    eventdata   = eventdata
-  )
-}
-
-}

@@ -14,44 +14,23 @@ plot_exclusive_junctions_pdf(
 )
 }
 \arguments{
-\item{gtf}{Same as in \code{\link[=plot_exclusive_junctions]{plot_exclusive_junctions()}} - a path or a pre-loaded
-GTF \code{data.table}.}
+\item{gtf, target_gene, curvature}{See \code{\link[=plot_exclusive_junctions]{plot_exclusive_junctions()}}.}
 
-\item{target_gene}{Gene name, e.g. \code{"Tpm1"}.}
+\item{out_pdf}{Character path for the PDF.}
 
-\item{out_pdf}{Character. Path to the PDF file to write.}
-
-\item{curvature}{Numeric. Arc-height knob. Default \code{-0.2}.}
-
-\item{width}{Numeric. PDF page width in inches. Default \code{10}.}
-
-\item{height}{Numeric. PDF page height in inches. If \code{NULL} (default), it
-is sized automatically to fit the full-gene page (all transcripts).}
+\item{width, height}{PDF page dimensions. \code{height = NULL} (default) sizes
+to the full-gene page.}
 }
 \value{
-Invisibly returns a list with \code{exclusive_transcripts} (the names of
-the exclusive-owning transcripts, in the order they were drawn) and
-\code{n_pages} (number of pages written).
+Invisibly, a list with \code{exclusive_transcripts} and \code{n_pages}.
 }
 \description{
-Writes a multi-page PDF summarising a gene's splicing variation. Page one
-shows the full gene (every transcript) with exclusive junctions highlighted
-in black. Each subsequent page shows one transcript that owns an exclusive
-junction, with that junction rendered in black and its other junctions in
-grey.
+Writes a multi-page PDF: page 1 = full gene view (all transcripts,
+exclusive arcs in black); subsequent pages = one per exclusive-owning
+transcript, with its exclusive junction in black.
 }
 \section{Required packages}{
 
-Requires the \pkg{ggplot2} package, listed in \code{Suggests}.
+Requires the \pkg{ggplot2} package (declared in \code{Suggests}).
 }
 
-\examples{
-\dontrun{
-  plot_exclusive_junctions_pdf(
-    gtf         = "Mus_musculus.GRCm39.110.gtf",
-    target_gene = "Tpm1",
-    out_pdf     = "Tpm1_variations.pdf"
-  )
-}
-
-}
