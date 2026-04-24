@@ -1062,9 +1062,31 @@ make_eventdata_plus <- function(eventdata, GTF_file_direction) {
   # Filter for 'gene' entries
   ref_gtf <- GTF[type == "gene"]
 
-  # Extract gene_id and gene_name from the attribute column
-  ref_gtf[, gene_id := sub('.*gene_id "([^"]+)".*', '\\1', attribute)]
-  ref_gtf[, gene_name := sub('.*gene_name "([^"]+)".*', '\\1', attribute)]
+  # Extract gene_id and gene_name from the attribute column.
+  # Use regmatches() / regexpr() (not sub()) so that rows lacking the key
+  # return NA instead of the entire attribute string. In Ensembl GTFs a
+  # small number of gene records have no `gene_name` attribute; those
+  # previously ended up with a 90+ character "gene name" that was actually
+  # the full attribute text.
+  extract_attr <- function(x, key) {
+    re  <- sprintf('.*%s "([^"]+)".*', key)
+    hit <- grepl(re, x)
+    out <- rep(NA_character_, length(x))
+    out[hit] <- sub(re, "\\1", x[hit])
+    out
+  }
+
+  ref_gtf[, gene_id   := extract_attr(attribute, "gene_id")]
+  ref_gtf[, gene_name := extract_attr(attribute, "gene_name")]
+
+  # Fall back to gene_id where gene_name is missing (Ensembl convention).
+  missing_name_n <- sum(is.na(ref_gtf$gene_name))
+  if (missing_name_n > 0L) {
+    message(sprintf(
+      "make_eventdata_plus: %d gene record(s) had no gene_name; falling back to gene_id.",
+      missing_name_n))
+    ref_gtf[is.na(gene_name), gene_name := gene_id]
+  }
 
   # Select and rename relevant columns
   ref_gtf <- ref_gtf[, .(chr = seqid, start, end, strand, gene_id, gene_name)]

@@ -1,6 +1,6 @@
 Package: splikit
 Title: Analysing RNA Splicing in scRNA-Seq Data
-Version: 2.0.1
+Version: 2.1.0
 Authors@R:
     person("Arsham", "Mikaeili Namini", , "arsham.mikaeilinamini@mail.mcgill.ca", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-9453-6951"))
@@ -18,7 +18,7 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Imports: Matrix, data.table, methods, stats, Rcpp, R6
 LinkingTo: Rcpp, RcppArmadillo
-Suggests: testthat (>= 3.0.0), knitr, rmarkdown
+Suggests: testthat (>= 3.0.0), knitr, rmarkdown, ggplot2
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 Depends: R (>= 4.1.0)

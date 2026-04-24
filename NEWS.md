@@ -1,3 +1,33 @@
+# splikit 2.1.0
+
+## New Features
+* **Transcript-exclusive junction plotting**
+  - `plot_exclusive_junctions()` renders a gene model with one row per
+    transcript, exon rectangles, intron/junction arcs, and Ensembl ids
+    shown beneath transcript names on the y-axis. Junctions used by a
+    single transcript of the gene are highlighted as solid black arcs;
+    shared junctions render as thin grey arcs.
+  - Flags: `show_exclusive` (restrict to exclusive-owning transcripts),
+    `transcript` (pin the plot to one or more transcript names),
+    `curvature` (arc-height knob).
+  - `plot_exclusive_junctions_pdf()` writes a multi-page PDF: page 1 is
+    the full gene view, subsequent pages show each exclusive transcript
+    with its exclusive junction in black.
+  - Accepts a GTF path or an already-loaded `data.table`. `ggplot2` is
+    declared under `Suggests`.
+
+## Bug Fixes
+* **`make_eventdata_plus()` gene_name extraction**
+  - The previous regex used `sub('.*gene_name "([^"]+)".*', ...)`, which
+    returns the input unchanged when no match is found. Gene records
+    without a `gene_name` attribute (e.g. ~310 rows in Ensembl mouse
+    GRCm39.110) therefore ended up with a `gene_name` equal to the full
+    attribute blob.
+  - Fixed with a `grepl()`-guarded extractor that returns `NA` on
+    no-match, with a fallback to `gene_id` so downstream matching by
+    name keeps working. The function now emits a `message()` reporting
+    how many records required the fallback.
+
 # splikit 1.0.5
 
 ## 🚀 Major Enhancements
