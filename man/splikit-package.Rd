@@ -3,7 +3,7 @@
 \docType{package}
 \name{splikit-package}
 \alias{splikit-package}
-\title{splikit: Analysing RNA Splicing in scRNA-Seq Data}
+\title{splikit: Analysing RNA Splicing in Single-Cell RNA Sequencing Data}
 \description{
 \if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
 

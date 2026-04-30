@@ -1,3 +1,13 @@
+# splikit 2.3.1
+
+## CRAN Compliance
+* Fixed `no visible binding for '..keep'` NOTE in `.gene_exons()`: replaced
+  `exons[, ..keep]` with `exons[, keep, with = FALSE]`.
+* Fixed `no visible binding for 'x'` NOTE in `.build_plot()`: added `x` to
+  `globalVariables()` in `globals.R`.
+* Wrapped `get_pseudo_correlation()` example in `\donttest{}` to avoid
+  exceeding the CRAN 5-second example time limit.
+
 # splikit 2.3.0
 
 ## New Features

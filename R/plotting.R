@@ -82,7 +82,7 @@
 
   keep <- c("seqname", "strand", "transcript_id", "transcript_name",
             "exon_number", "start", "end")
-  exons <- exons[, ..keep]
+  exons <- exons[, keep, with = FALSE]
   if (!nrow(exons))
     stop(sprintf("No exon rows for gene '%s'.", target_gene), call. = FALSE)
 

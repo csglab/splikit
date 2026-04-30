@@ -41,6 +41,7 @@ for inclusion and exclusion, respectively. The function now supports both sparse
 matrices for m1 and m2, and allows selection between Cox-Snell and Nagelkerke R² metrics.
 }
 \examples{
+\donttest{
 set.seed(42)
 # get the m1 object
 junction_abundance_object <- load_toy_SJ_object()
@@ -67,9 +68,10 @@ print(pseudo_r_square_cox)
 # Example with sparse matrices (more memory efficient)
 pseudo_r_square_sparse <- get_pseudo_correlation(ZDB_matrix, m1_inclusion, m2_exclusion)
 
-# Example using Nagelkerke R² instead of Cox-Snell
-pseudo_r_square_nagel <- get_pseudo_correlation(ZDB_matrix, m1_inclusion, m2_exclusion, 
+# Example using Nagelkerke R-squared instead of Cox-Snell
+pseudo_r_square_nagel <- get_pseudo_correlation(ZDB_matrix, m1_inclusion, m2_exclusion,
                                                 metric = "Nagelkerke")
 print(pseudo_r_square_nagel)
+}
 
 }

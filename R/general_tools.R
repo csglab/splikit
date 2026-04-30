@@ -29,6 +29,7 @@ utils::globalVariables(c("unique_mapped", "i", "j", "x_1", "x_tot", "x_2", "grou
 #' }
 #'
 #' @examples
+#' \donttest{
 #' set.seed(42)
 #' # get the m1 object
 #' junction_abundance_object <- load_toy_SJ_object()
@@ -54,11 +55,12 @@ utils::globalVariables(c("unique_mapped", "i", "j", "x_1", "x_tot", "x_2", "grou
 #'
 #' # Example with sparse matrices (more memory efficient)
 #' pseudo_r_square_sparse <- get_pseudo_correlation(ZDB_matrix, m1_inclusion, m2_exclusion)
-#' 
-#' # Example using Nagelkerke R² instead of Cox-Snell
-#' pseudo_r_square_nagel <- get_pseudo_correlation(ZDB_matrix, m1_inclusion, m2_exclusion, 
+#'
+#' # Example using Nagelkerke R-squared instead of Cox-Snell
+#' pseudo_r_square_nagel <- get_pseudo_correlation(ZDB_matrix, m1_inclusion, m2_exclusion,
 #'                                                 metric = "Nagelkerke")
 #' print(pseudo_r_square_nagel)
+#' }
 #'
 #' @export
 get_pseudo_correlation <- function(ZDB_matrix, m1_inclusion = NULL, m2_exclusion = NULL, metric = "CoxSnell", suppress_warnings = TRUE, verbose = FALSE) {
