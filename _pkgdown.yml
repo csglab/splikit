@@ -1,4 +1,4 @@
-url: https://arshammik.github.io/splikit/
+url: https://csglab.github.io/splikit/
 
 template:
   bootstrap: 5
@@ -60,6 +60,14 @@ reference:
   - make_gene_count
   - make_velo_count
   - make_eventdata_plus
+
+- title: Visualisation
+  desc: Splice-junction and gene-model plots
+  contents:
+  - plot_exclusive_junctions
+  - plot_exclusive_junctions_event
+  - plot_exclusive_junctions_pdf
+  - print.splikit_junction_plot
 
 - title: Feature Selection
   desc: Functions for identifying variable splicing events
