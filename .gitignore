@@ -56,3 +56,7 @@ rsconnect/
 # pkgdown site (deployed to gh-pages)
 docs/*
 !docs/.nojekyll
+
+# AI agents
+.claude/
+CLAUDE.md
