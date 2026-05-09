@@ -114,6 +114,18 @@ get_pseudo_correlation <- function(ZDB_matrix, m1_inclusion = NULL, m2_exclusion
     is_m1_sparse <- inherits(m1_inclusion, "Matrix")
     is_m2_sparse <- inherits(m2_exclusion, "Matrix")
 
+    # The C++ kernels expect a numeric CSC sparse matrix (dgCMatrix). Coerce
+    # integer or non-CSC sparse inputs (e.g. igCMatrix produced when
+    # Matrix::Matrix() is called on an integer matrix) before dispatch.
+    if (is_m1_sparse && !inherits(m1_inclusion, "dgCMatrix")) {
+      m1_inclusion <- methods::as(methods::as(m1_inclusion, "CsparseMatrix"),
+                                  "dMatrix")
+    }
+    if (is_m2_sparse && !inherits(m2_exclusion, "dgCMatrix")) {
+      m2_exclusion <- methods::as(methods::as(m2_exclusion, "CsparseMatrix"),
+                                  "dMatrix")
+    }
+
     if (!is_m1_sparse && !is_m2_sparse) {
       # Both dense - ensure they are matrices
       correls <- cppBetabinPseudoR2(Z = ZDB_matrix,
