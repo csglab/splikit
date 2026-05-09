@@ -58,8 +58,6 @@ reference:
   contents:
   - make_m1
   - make_m2
-  - .make_m2_batched
-  - .make_m2_fast
   - make_junction_ab
   - make_gene_count
   - make_velo_count
