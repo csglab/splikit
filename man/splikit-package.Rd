@@ -7,7 +7,7 @@
 \description{
 \if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
 
-Provides analysis of high-dimensional single-cell splicing data. Offers a framework to extract and work with ratio-based data structures derived from single-cell RNA sequencing experiments. Provides both a modern R6 object-oriented interface and direct matrix manipulation functions. Core functionalities are implemented in C++ via 'Rcpp' to ensure high performance and scalability on large datasets.
+Provides analysis of high-dimensional single-cell splicing data. Offers a framework to extract and work with ratio-based data structures derived from single-cell RNA sequencing experiments. Provides both a modern 'R6' object-oriented interface and direct matrix manipulation functions. Core functionalities are implemented in 'C++' via 'Rcpp' to ensure high performance and scalability on large datasets.
 }
 \seealso{
 Useful links:

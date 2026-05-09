@@ -16,9 +16,12 @@ template:
 
 navbar:
   structure:
-    left:  [manual, reference, guides]
+    left:  [methods, manual, reference, guides]
     right: [search, github]
   components:
+    methods:
+      text: Methods
+      href: articles/methods.html
     manual:
       text: Manual
       href: articles/splikit_manual.html
@@ -40,6 +43,7 @@ articles:
 - title: Documentation
   navbar: ~
   contents:
+  - methods
   - splikit_manual
   - STARsolo_guide
 

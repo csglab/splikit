@@ -1,0 +1,32 @@
+---
+title: "Methods Overview"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Methods Overview}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# Methods Overview
+
+A concise summary of the statistical methods implemented in `splikit`. For a hands-on walkthrough see the [Splikit Manual](splikit_manual.html); the full source is at <https://github.com/csglab/splikit>.
+
+## Local junction variants (LJVs)
+
+Splice junctions are grouped into *local junction variants* — junctions sharing either a 5-prime or 3-prime coordinate. For each junction, `splikit` builds an **inclusion matrix** M1 of its per-cell read counts and an **exclusion matrix** M2 holding the summed counts of the other junctions in its LJV. M1 and M2 are sparse `dgCMatrix` objects of dimension events x cells. A junction that participates in two LJVs (one per shared coordinate) contributes two rows with different M2 values; downstream code tolerates this by design.
+
+## Variable-event selection
+
+`find_variable_events()` computes, for each event, the per-library binomial deviance of the inclusion ratio M1 / (M1 + M2) against an intercept-only baseline `p_hat = sum(M1) / sum(M1 + M2)`. Events with the largest summed deviance are retained as highly variable.
+
+## Variable-gene selection
+
+`find_variable_genes()` offers two methods on the gene-expression matrix: `"sum_deviance"` fits a per-gene negative-binomial deviance with a method-of-moments theta estimate, and `"vst"` returns a Seurat-style variance-stabilising transformation.
+
+## Event-covariate association
+
+`get_pseudo_correlation()` fits a per-event binomial logistic GLM of the inclusion ratio on a target covariate by iteratively reweighted least squares, and reports a Cox-Snell / Nagelkerke pseudo-R-squared computed from the residual deviance. This quantifies how strongly each event tracks the covariate (e.g. a cluster label or a gene's expression).
+
+## Implementation
+
+All four kernels are written in C++ via `Rcpp` / `RcppArmadillo` with OpenMP parallelism over rows or cells. `make_m2()` automatically falls back to a `data.table` batched path when the working set would overflow 32-bit Armadillo indices.

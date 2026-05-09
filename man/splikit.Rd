@@ -16,13 +16,10 @@ A new SplikitObject instance.
 Convenience function to create a SplikitObject.
 }
 \examples{
-\dontrun{
-# From junction abundance
-junction_ab <- load_toy_SJ_object()
-obj <- splikit(junction_ab = junction_ab)
-
-# From existing matrices
-obj <- splikit(m1 = my_m1, m2 = my_m2, eventData = my_eventdata)
+\donttest{
+# From existing matrices using the toy dataset
+toy <- load_toy_M1_M2_object()
+obj <- splikit(m1 = toy$m1, m2 = toy$m2, eventData = toy$eventdata)
 }
 
 }

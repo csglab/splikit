@@ -14,20 +14,18 @@
 #' }
 #'
 #' @examples
-#' \dontrun{
-#' # Create from junction abundance data
-#' junction_ab <- load_toy_SJ_object()
-#' obj <- SplikitObject$new(junction_ab = junction_ab)
+#' \donttest{
+#' # Create from existing matrices using the toy dataset
+#' toy <- load_toy_M1_M2_object()
+#' obj <- SplikitObject$new(m1 = toy$m1, m2 = toy$m2,
+#'                          eventData = toy$eventdata)
 #'
-#' # Compute M2 and find variable events
-#' obj$makeM2()
+#' # Find variable events
 #' hve <- obj$findVariableEvents(min_row_sum = 50)
 #'
-#' # Or create from existing matrices
-#' obj <- SplikitObject$new(m1 = my_m1, m2 = my_m2, eventData = my_eventdata)
-#'
-#' # Chain operations
-#' results <- obj$makeM2()$findVariableEvents()
+#' # Or build M2 from M1 + eventData and chain into feature selection
+#' obj2 <- SplikitObject$new(m1 = toy$m1, eventData = toy$eventdata)
+#' results <- obj2$makeM2()$findVariableEvents()
 #' }
 #'
 #' @importFrom R6 R6Class
@@ -529,13 +527,10 @@ SplikitObject <- R6::R6Class("SplikitObject",
 #' @return A new SplikitObject instance.
 #'
 #' @examples
-#' \dontrun{
-#' # From junction abundance
-#' junction_ab <- load_toy_SJ_object()
-#' obj <- splikit(junction_ab = junction_ab)
-#'
-#' # From existing matrices
-#' obj <- splikit(m1 = my_m1, m2 = my_m2, eventData = my_eventdata)
+#' \donttest{
+#' # From existing matrices using the toy dataset
+#' toy <- load_toy_M1_M2_object()
+#' obj <- splikit(m1 = toy$m1, m2 = toy$m2, eventData = toy$eventdata)
 #' }
 #'
 #' @export

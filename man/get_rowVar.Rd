@@ -28,13 +28,11 @@ Only 32-bit integer indices are supported, due to limitations in R's internal ma
 This function will not work with matrices that exceed the 32-bit integer indexing range.
 }
 \examples{
-\dontrun{
-  library(Matrix)
-  # Dense example
-  dm <- matrix(rnorm(1000), nrow = 100)
-  get_rowVar(dm)
-  # Sparse example
-  sm <- rsparsematrix(100, 10, density = 0.1)
-  get_rowVar(sm)
-}
+library(Matrix)
+# Dense example
+dm <- matrix(rnorm(1000), nrow = 100)
+get_rowVar(dm)
+# Sparse example
+sm <- rsparsematrix(100, 10, density = 0.1)
+get_rowVar(sm)
 }

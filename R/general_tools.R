@@ -203,15 +203,13 @@ get_pseudo_correlation <- function(ZDB_matrix, m1_inclusion = NULL, m2_exclusion
 #' Dispatches in C++ between dense and sparse implementations to avoid unnecessary
 #' overhead or external dependencies. Uses compressed-column traversal for sparse inputs.
 #' @examples
-#' \dontrun{
-#'   library(Matrix)
-#'   # Dense example
-#'   dm <- matrix(rnorm(1000), nrow = 100)
-#'   get_rowVar(dm)
-#'   # Sparse example
-#'   sm <- rsparsematrix(100, 10, density = 0.1)
-#'   get_rowVar(sm)
-#' }
+#' library(Matrix)
+#' # Dense example
+#' dm <- matrix(rnorm(1000), nrow = 100)
+#' get_rowVar(dm)
+#' # Sparse example
+#' sm <- rsparsematrix(100, 10, density = 0.1)
+#' get_rowVar(sm)
 #' @note
 #' Only 32-bit integer indices are supported, due to limitations in R's internal matrix representations.
 #' This function will not work with matrices that exceed the 32-bit integer indexing range.

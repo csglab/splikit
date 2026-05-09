@@ -294,8 +294,30 @@
 #' Requires the \pkg{ggplot2} package (declared in `Suggests`).
 #'
 #' @examples
-#' \dontrun{
-#'   plot_exclusive_junctions("Mus_musculus.GRCm39.110.gtf", "Tpm1")
+#' \donttest{
+#' if (requireNamespace("ggplot2", quietly = TRUE)) {
+#'   # Build a tiny synthetic GTF as a data.table (no external file needed).
+#'   # tx1 has 3 exons (2 junctions); tx2 has 2 exons (1 junction).
+#'   gtf <- data.table::data.table(
+#'     seqname = "chr1",
+#'     source  = "toy",
+#'     type    = rep("exon", 5),
+#'     start   = c(100, 300, 500, 100, 500),
+#'     end     = c(200, 400, 600, 200, 600),
+#'     score   = ".",
+#'     strand  = "+",
+#'     frame   = ".",
+#'     attr    = c(
+#'       'gene_name "FOO"; transcript_id "tx1"; exon_number "1";',
+#'       'gene_name "FOO"; transcript_id "tx1"; exon_number "2";',
+#'       'gene_name "FOO"; transcript_id "tx1"; exon_number "3";',
+#'       'gene_name "FOO"; transcript_id "tx2"; exon_number "1";',
+#'       'gene_name "FOO"; transcript_id "tx2"; exon_number "2";'
+#'     )
+#'   )
+#'   res <- plot_exclusive_junctions(gtf, "FOO")
+#'   res$info
+#' }
 #' }
 #'
 #' @export
