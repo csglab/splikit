@@ -5,6 +5,7 @@
 
 [![R-CMD-check](https://github.com/csglab/splikit/actions/workflows/R-CMD-check.yml/badge.svg)](https://github.com/csglab/splikit/actions/workflows/R-CMD-check.yml)
 [![Documentation](https://img.shields.io/badge/Docs-Learn%20More-blue.svg)](https://csglab.github.io/splikit/)
+[![CRAN status](https://www.r-pkg.org/badges/version/splikit)](https://CRAN.R-project.org/package=splikit)
 
 ## **Requirements**
 
