@@ -681,8 +681,9 @@ length(intersect(hvg_vst[1:500]$events, hvg_dev[1:500]$events))
 
 **Function Signature**:
 ```r
-get_pseudo_correlation(ZDB_matrix, m1_inclusion, m2_exclusion, 
-                      metric = "CoxSnell", suppress_warnings = TRUE)
+get_pseudo_correlation(ZDB_matrix, m1_inclusion, m2_exclusion,
+                      metric = "CoxSnell", suppress_warnings = TRUE,
+                      permutation_count = 100L, permutation_seed = NULL)
 ```
 
 **Parameters**:
@@ -690,6 +691,10 @@ get_pseudo_correlation(ZDB_matrix, m1_inclusion, m2_exclusion,
 - `m1_inclusion`, `m2_exclusion`: Can be either sparse or dense matrices
 - `metric`: R² metric to use - "CoxSnell" (default) or "Nagelkerke"
 - `suppress_warnings`: Whether to suppress computational warnings
+- `permutation_count`: Number of cell-permutation null draws per event (default `100`); use `1` for the original single-permutation behaviour, and `1000`+ for reliable empirical FDR
+- `permutation_seed`: Optional seed for reproducible permutations (does not disturb the global RNG)
+
+**Output columns**: `event`, `pseudo_correlation`, `null_distribution` (mean of the per-event null draws), `null_sd`, `n_perm_valid`, `emp_pvalue` (two-sided empirical p-value), and `emp_padj` (BH-adjusted). The full per-event null draws are attached as `attr(result, "null_draws")`.
 
 **Use Cases**:
 - Correlating splicing patterns with gene expression

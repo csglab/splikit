@@ -220,10 +220,20 @@ SplikitObject <- R6::R6Class("SplikitObject",
     #'   Must have same dimensions as m1.
     #' @param metric R-squared metric: "CoxSnell" or "Nagelkerke" (default: "CoxSnell").
     #' @param suppress_warnings Suppress computation warnings (default: TRUE).
+    #' @param permutation_count Integer. Number of cell-permutation null draws per
+    #'   event used to build the empirical null (default: 100L). Use 1L for the
+    #'   original single-permutation behaviour.
+    #' @param permutation_seed Optional single numeric value seeding the
+    #'   permutations for reproducibility without disturbing the global RNG
+    #'   (default: NULL).
     #'
-    #' @return A data.table with event names, pseudo_correlation, and null_distribution.
+    #' @return A data.table with event names, pseudo_correlation, null_distribution,
+    #'   null_sd, n_perm_valid, emp_pvalue, and emp_padj, plus the full null draws
+    #'   in attr(result, "null_draws").
     getPseudoCorrelation = function(ZDB_matrix, metric = "CoxSnell",
-                                     suppress_warnings = TRUE) {
+                                     suppress_warnings = TRUE,
+                                     permutation_count = 100L,
+                                     permutation_seed = NULL) {
 
       private$ensureM2Computed()
 
@@ -249,7 +259,9 @@ SplikitObject <- R6::R6Class("SplikitObject",
         m1_inclusion = self$m1,
         m2_exclusion = self$m2,
         metric = metric,
-        suppress_warnings = suppress_warnings
+        suppress_warnings = suppress_warnings,
+        permutation_count = permutation_count,
+        permutation_seed = permutation_seed
       )
 
       # Warn about NA removal

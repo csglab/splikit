@@ -1,3 +1,23 @@
+# splikit 2.3.2
+
+## New Features
+* **Repeated permutation null for `get_pseudo_correlation()`.** The null model
+  is now built by permuting the cells (columns) of `ZDB_matrix` and recomputing
+  the pseudo correlation `permutation_count` times (default `100`), instead of a
+  single permutation. This yields a per-event empirical null and adds the
+  columns `null_sd`, `n_perm_valid`, `emp_pvalue` (two-sided, `(b + 1) / (m + 1)`
+  corrected), and `emp_padj` (Benjamini-Hochberg). The full per-event draws are
+  attached as `attr(result, "null_draws")`.
+* **`permutation_seed` argument** for reproducible permutations. When supplied,
+  the RNG is seeded locally and the caller's global RNG stream is saved and
+  restored, so reproducibility does not perturb downstream randomness.
+* Both additions are exposed on the R6 method `SplikitObject$getPseudoCorrelation()`.
+
+## Behavioural Notes
+* `null_distribution` is now the mean of the per-event null draws; it equals the
+  original single null value when `permutation_count = 1`, preserving backward
+  compatibility. The observed `pseudo_correlation` is unchanged.
+
 # splikit 2.3.1
 
 ## CRAN Compliance
