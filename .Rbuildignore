@@ -13,3 +13,4 @@
 ^build_pkgdown_site\.R$
 ^CLAUDE\.md$
 ^\.claude$
+^RELEASENOTES\.md$

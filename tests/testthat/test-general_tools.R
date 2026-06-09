@@ -35,6 +35,68 @@ test_that("get_pseudo_correlation works on valid data", {
   expect_equal(res_obj$pseudo_correlation, res$pseudo_correlation)
 })
 
+test_that("get_pseudo_correlation permutation null is valid and reproducible", {
+  n_events <- 6
+  n_cells <- 120
+  set.seed(11)
+
+  m1 <- matrix(rbinom(n_events * n_cells, size = 10, prob = 0.5), nrow = n_events)
+  m2 <- matrix(rbinom(n_events * n_cells, size = 10, prob = 0.5), nrow = n_events)
+  ZDB <- matrix(rnorm(n_events * n_cells), nrow = n_events, ncol = n_cells)
+  rownames(m1) <- rownames(m2) <- rownames(ZDB) <- paste0("event_", seq_len(n_events))
+
+  res <- get_pseudo_correlation(ZDB, m1, m2,
+                                permutation_count = 50, permutation_seed = 123)
+
+  # New columns are present and well formed
+  expect_true(all(c("null_sd", "n_perm_valid", "emp_pvalue", "emp_padj") %in% names(res)))
+  expect_true(all(res$emp_pvalue > 0 & res$emp_pvalue <= 1))
+  expect_true(all(res$emp_padj >= 0 & res$emp_padj <= 1))
+  expect_true(all(res$n_perm_valid <= 50L))
+  # Smallest achievable empirical p-value is 1 / (n_perm_valid + 1)
+  expect_true(all(res$emp_pvalue >= 1 / (res$n_perm_valid + 1) - 1e-9))
+
+  # Full null draws attached as an attribute, correctly shaped
+  draws <- attr(res, "null_draws")
+  expect_true(is.matrix(draws))
+  expect_equal(ncol(draws), 50L)
+  expect_equal(nrow(draws), nrow(res))
+
+  # Same seed -> identical null; observed correlation is seed-independent
+  res2 <- get_pseudo_correlation(ZDB, m1, m2,
+                                 permutation_count = 50, permutation_seed = 123)
+  expect_equal(res$null_distribution, res2$null_distribution)
+  expect_equal(res$emp_pvalue, res2$emp_pvalue)
+  expect_equal(res$pseudo_correlation, res2$pseudo_correlation)
+
+  # Different seed -> different draws, but the same observed correlation
+  res3 <- get_pseudo_correlation(ZDB, m1, m2,
+                                 permutation_count = 50, permutation_seed = 999)
+  expect_false(isTRUE(all.equal(attr(res, "null_draws"), attr(res3, "null_draws"))))
+  expect_equal(res$pseudo_correlation, res3$pseudo_correlation)
+
+  # permutation_seed must not perturb the caller's global RNG stream
+  set.seed(7); a <- runif(3)
+  invisible(get_pseudo_correlation(ZDB, m1, m2,
+                                   permutation_count = 10, permutation_seed = 42))
+  set.seed(7); b <- runif(3)
+  expect_equal(a, b)
+
+  # permutation_count = 1 reproduces the single-draw behaviour: the mean null
+  # equals the single column of draws
+  res1 <- get_pseudo_correlation(ZDB, m1, m2,
+                                 permutation_count = 1, permutation_seed = 5)
+  expect_equal(ncol(attr(res1, "null_draws")), 1L)
+  expect_equal(unname(res1$null_distribution),
+               unname(attr(res1, "null_draws")[, 1]))
+
+  # Input validation
+  expect_error(get_pseudo_correlation(ZDB, m1, m2, permutation_count = 0),
+               "permutation_count")
+  expect_error(get_pseudo_correlation(ZDB, m1, m2, permutation_seed = c(1, 2)),
+               "permutation_seed")
+})
+
 test_that("get_pseudo_correlation error handling works", {
   m1 <- matrix(1, nrow = 2, ncol = 2)
   m2 <- matrix(1, nrow = 2, ncol = 2)

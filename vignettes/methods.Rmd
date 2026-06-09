@@ -25,7 +25,7 @@ Splice junctions are grouped into *local junction variants* — junctions sharin
 
 ## Event-covariate association
 
-`get_pseudo_correlation()` fits a per-event binomial logistic GLM of the inclusion ratio on a target covariate by iteratively reweighted least squares, and reports a Cox-Snell / Nagelkerke pseudo-R-squared computed from the residual deviance. This quantifies how strongly each event tracks the covariate (e.g. a cluster label or a gene's expression).
+`get_pseudo_correlation()` fits a per-event binomial logistic GLM of the inclusion ratio on a target covariate by iteratively reweighted least squares, and reports a Cox-Snell / Nagelkerke pseudo-R-squared computed from the residual deviance. This quantifies how strongly each event tracks the covariate (e.g. a cluster label or a gene's expression). A per-event empirical null is built by permuting the cells (columns) of the covariate `permutation_count` times (default 100) and recomputing the statistic; this yields a two-sided empirical p-value (`emp_pvalue`) and a Benjamini-Hochberg adjustment (`emp_padj`). The permutations can be made reproducible with `permutation_seed` without disturbing the global RNG stream.
 
 ## Implementation
 

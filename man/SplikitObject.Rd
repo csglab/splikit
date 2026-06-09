@@ -201,7 +201,9 @@ Compute pseudo-correlation between splicing and external data.
 \if{html}{\out{<div class="r">}}\preformatted{SplikitObject$getPseudoCorrelation(
   ZDB_matrix,
   metric = "CoxSnell",
-  suppress_warnings = TRUE
+  suppress_warnings = TRUE,
+  permutation_count = 100L,
+  permutation_seed = NULL
 )}\if{html}{\out{</div>}}
 }
 
@@ -214,11 +216,21 @@ Must have same dimensions as m1.}
 \item{\code{metric}}{R-squared metric: "CoxSnell" or "Nagelkerke" (default: "CoxSnell").}
 
 \item{\code{suppress_warnings}}{Suppress computation warnings (default: TRUE).}
+
+\item{\code{permutation_count}}{Integer. Number of cell-permutation null draws per
+event used to build the empirical null (default: 100L). Use 1L for the
+original single-permutation behaviour.}
+
+\item{\code{permutation_seed}}{Optional single numeric value seeding the
+permutations for reproducibility without disturbing the global RNG
+(default: NULL).}
 }
 \if{html}{\out{</div>}}
 }
 \subsection{Returns}{
-A data.table with event names, pseudo_correlation, and null_distribution.
+A data.table with event names, pseudo_correlation, null_distribution,
+null_sd, n_perm_valid, emp_pvalue, and emp_padj, plus the full null draws
+in attr(result, "null_draws").
 }
 }
 \if{html}{\out{<hr>}}

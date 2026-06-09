@@ -659,9 +659,13 @@ test_that("SplikitObject$getPseudoCorrelation executes correctly", {
   set.seed(42)
   ZDB_matrix <- matrix(rnorm(n_events * n_cells), nrow = n_events, ncol = n_cells)
   
-  res <- obj$getPseudoCorrelation(ZDB_matrix = ZDB_matrix, suppress_warnings = TRUE)
+  # Keep permutation_count small here: this runs on the full 2000 x 2000 toy data.
+  res <- obj$getPseudoCorrelation(ZDB_matrix = ZDB_matrix, suppress_warnings = TRUE,
+                                  permutation_count = 3, permutation_seed = 1)
   expect_true(data.table::is.data.table(res))
   # With pure random data, some might be NA and removed, check columns
-  expect_true(all(c("event", "pseudo_correlation", "null_distribution") %in% names(res)))
+  expect_true(all(c("event", "pseudo_correlation", "null_distribution",
+                    "null_sd", "n_perm_valid", "emp_pvalue", "emp_padj") %in% names(res)))
+  expect_true(all(res$emp_pvalue > 0 & res$emp_pvalue <= 1))
 })
 
