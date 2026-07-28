@@ -6,7 +6,7 @@
 [![CRAN status](https://www.r-pkg.org/badges/version/splikit)](https://CRAN.R-project.org/package=splikit)
 [![R-CMD-check](https://github.com/csglab/splikit/actions/workflows/R-CMD-check.yml/badge.svg)](https://github.com/csglab/splikit/actions/workflows/R-CMD-check.yml)
 [![Documentation](https://img.shields.io/badge/Docs-Learn%20More-blue.svg)](https://csglab.github.io/splikit/)
-[![CRAN status](https://www.r-pkg.org/badges/version/splikit)](https://CRAN.R-project.org/package=splikit) [![GitHub version](https://img.shields.io/github/v/release/csglab/splikit?label=GitHub)](https://github.com/csglab/splikit/releases/latest)
+[![GitHub version](https://img.shields.io/github/v/release/csglab/splikit?label=GitHub)](https://github.com/csglab/splikit/releases/latest)
 
 
 
