@@ -6,6 +6,24 @@ canonical, CRAN-facing changelog see `NEWS.md`.
 
 ---
 
+## 2.3.3 — 2026-07-27
+
+**Summary — Exportable pseudo-correlation null results.**
+
+- Replaced the pseudo-correlation result's `null_draws` matrix attribute with a
+  structured S3 result containing `statistics`, a long `null_distribution`, and
+  computation `metadata`.
+- The long table has one row per retained event and permutation and preserves
+  both identifiers for reliable export and reconstruction.
+- Per-event empirical p-values and adjusted p-values are unchanged; the pooled
+  null column is descriptive and is not used as a global event-level null.
+- Added independent `matrix_source` and `matrix_file` controls to
+  `make_gene_count()`, including direct support for raw or filtered matrices
+  and STARsolo files such as `UniqueAndMult-EM.mtx`. The defaults now read
+  `raw/UniqueAndMult-EM.mtx` when available and fall back to `raw/matrix.mtx`.
+
+---
+
 ## 2.3.2 — 2026-06-09
 
 **Author:** Arsham Mikaeili Namini

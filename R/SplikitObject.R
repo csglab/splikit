@@ -227,9 +227,8 @@ SplikitObject <- R6::R6Class("SplikitObject",
     #'   permutations for reproducibility without disturbing the global RNG
     #'   (default: NULL).
     #'
-    #' @return A data.table with event names, pseudo_correlation, null_distribution,
-    #'   null_sd, n_perm_valid, emp_pvalue, and emp_padj, plus the full null draws
-    #'   in attr(result, "null_draws").
+    #' @return A `splikit_pseudo_correlation_result` with per-event statistics,
+    #'   a long event-by-permutation null distribution, and computation metadata.
     getPseudoCorrelation = function(ZDB_matrix, metric = "CoxSnell",
                                      suppress_warnings = TRUE,
                                      permutation_count = 100L,
@@ -266,7 +265,7 @@ SplikitObject <- R6::R6Class("SplikitObject",
 
       # Warn about NA removal
       n_before <- nrow(self$m1)
-      n_after <- nrow(result)
+      n_after <- nrow(result$statistics)
       if (n_before > n_after) {
         n_removed <- n_before - n_after
         message("Removed ", n_removed, " event(s) with NA values (",

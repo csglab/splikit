@@ -1,3 +1,27 @@
+# splikit 2.3.3
+
+## Gene-expression input selection
+
+* `make_gene_count()` now separates count-matrix selection from barcode
+  filtering. `matrix_source` selects the `raw` or `filtered` directory, while
+  `matrix_file` supports either the standard `matrix.mtx` or an alternative
+  Matrix Market file. By default, the function reads from `raw/`, prefers
+  STARsolo's `UniqueAndMult-EM.mtx` when available, and falls back to
+  `raw/matrix.mtx`. Explicit arguments can still force any supported source or
+  filename.
+
+## Pseudo-correlation result export
+
+* `get_pseudo_correlation()` and `SplikitObject$getPseudoCorrelation()` now
+  return a structured `splikit_pseudo_correlation_result`. Its `statistics`
+  component retains the existing per-event summaries and empirical inference,
+  while `null_distribution` contains one exportable row for every retained
+  event and permutation. The long table preserves the event and permutation
+  identifiers and replaces the previous `null_draws` matrix attribute.
+* The pooled null values are provided for descriptive analysis and export;
+  event-level empirical p-values continue to use each event's own permutation
+  draws.
+
 # splikit 2.3.2
 
 ## New Features

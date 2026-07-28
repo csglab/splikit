@@ -545,9 +545,28 @@ summary(cor_values)  # Often negative correlation
 
 ```r
 gene_expression <- make_gene_count(
-  expression_dirs = "/path/to/10X/output",
+  expression_dirs = "/path/to/STARsolo/Gene",
   sample_ids = "Sample1",
   use_internal_whitelist = TRUE
+)
+```
+
+`matrix_source` controls whether counts, features, and barcodes are read from
+the `raw/` or `filtered/` directory independently of barcode filtering. By
+default, `make_gene_count()` reads from `raw/`, uses
+`UniqueAndMult-EM.mtx` when that file is available, and otherwise falls back to
+`raw/matrix.mtx`. With `use_internal_whitelist = TRUE`, either matrix is then
+restricted to the barcodes in `filtered/barcodes.tsv`.
+
+To force the standard filtered matrix instead:
+
+```r
+gene_expression_filtered <- make_gene_count(
+  expression_dirs = "/path/to/STARsolo/Gene",
+  sample_ids = "Sample1",
+  matrix_source = "filtered",
+  matrix_file = "matrix.mtx",
+  use_internal_whitelist = FALSE
 )
 ```
 
@@ -694,7 +713,13 @@ get_pseudo_correlation(ZDB_matrix, m1_inclusion, m2_exclusion,
 - `permutation_count`: Number of cell-permutation null draws per event (default `100`); use `1` for the original single-permutation behaviour, and `1000`+ for reliable empirical FDR
 - `permutation_seed`: Optional seed for reproducible permutations (does not disturb the global RNG)
 
-**Output columns**: `event`, `pseudo_correlation`, `null_distribution` (mean of the per-event null draws), `null_sd`, `n_perm_valid`, `emp_pvalue` (two-sided empirical p-value), and `emp_padj` (BH-adjusted). The full per-event null draws are attached as `attr(result, "null_draws")`.
+**Output**: A structured result with `statistics`, `null_distribution`, and
+`metadata`. `statistics` contains `event`, `pseudo_correlation`,
+`null_distribution` (the per-event null mean), `null_sd`, `n_perm_valid`,
+`emp_pvalue` (two-sided event-wise empirical p-value), and `emp_padj`
+(BH-adjusted). The long `null_distribution` table contains `event`,
+`permutation`, and `null_pseudo_correlation`, with one row per retained event
+and permutation for direct export.
 
 **Use Cases**:
 - Correlating splicing patterns with gene expression
@@ -721,13 +746,20 @@ rownames(external_data) <- rownames(m1_matrix)
 correlations <- get_pseudo_correlation(external_data, m1_matrix, m2_matrix)
 
 # Examine results
-head(correlations[order(-abs(pseudo_correlation))])
+head(correlations$statistics[order(-abs(pseudo_correlation))])
 
-# Compare to null distribution
-plot(correlations$pseudo_correlation, correlations$null_distribution,
+# Compare observed correlations to their per-event null means
+plot(correlations$statistics$pseudo_correlation,
+     correlations$statistics$null_distribution,
      xlab = "Observed Correlation", ylab = "Null Distribution",
      main = "Pseudo-correlation Analysis")
 abline(0, 1, col = "red")
+
+# Export the two rectangular result tables independently
+statistics_file <- tempfile(fileext = ".csv")
+null_file <- tempfile(fileext = ".csv")
+data.table::fwrite(correlations$statistics, statistics_file)
+data.table::fwrite(correlations$null_distribution, null_file)
 ```
 
 ### `get_rowVar()`
@@ -885,7 +917,7 @@ if ("gene_expression" %in% names(toy_m1m2_data)) {
   )
   
   print("Top correlated events:")
-  print(head(correlations[order(-abs(pseudo_correlation))], 5))
+  print(head(correlations$statistics[order(-abs(pseudo_correlation))], 5))
 }
 
 cat("\n=== Analysis Complete ===\n")

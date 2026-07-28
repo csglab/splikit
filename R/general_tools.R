@@ -33,7 +33,18 @@ utils::globalVariables(c("unique_mapped", "i", "j", "x_1", "x_tot", "x_2", "grou
 #'   caller's global RNG stream is saved and restored, so passing a seed does not
 #'   perturb downstream randomness. Defaults to `NULL` (use the ambient RNG state).
 #'
-#' @return A `data.table` with the following columns:
+#' @return An S3 object of class `splikit_pseudo_correlation_result` with three
+#' components:
+#' \describe{
+#'   \item{statistics}{A per-event `data.table` with the columns described below.}
+#'   \item{null_distribution}{A long `data.table` containing one row per retained
+#'   event and permutation, with columns `event`, `permutation`, and
+#'   `null_pseudo_correlation`. This table is suitable for direct export or pooled
+#'   descriptive analyses; event-level p-values remain based on each event's own
+#'   permutation draws.}
+#'   \item{metadata}{A list recording the permutation settings and null-draw counts.}
+#' }
+#' The `statistics` component contains:
 #' \describe{
 #'   \item{event}{The event names from `ZDB_matrix` rownames.}
 #'   \item{pseudo_correlation}{The computed pseudo R² correlation values using the specified metric.}
@@ -43,8 +54,6 @@ utils::globalVariables(c("unique_mapped", "i", "j", "x_1", "x_tot", "x_2", "grou
 #'   \item{emp_pvalue}{Two-sided empirical p-value, `(b + 1) / (n_perm_valid + 1)`, where `b` is the number of valid null draws whose absolute value is greater than or equal to the absolute observed correlation.}
 #'   \item{emp_padj}{Benjamini-Hochberg adjusted `emp_pvalue` across the retained events.}
 #' }
-#' The full matrix of per-event null draws (events x `permutation_count`) is attached
-#' as `attr(result, "null_draws")` for custom downstream analyses.
 #'
 #' @examples
 #' \donttest{
@@ -83,9 +92,10 @@ utils::globalVariables(c("unique_mapped", "i", "j", "x_1", "x_tot", "x_2", "grou
 #'                                                  permutation_count = 20,
 #'                                                  permutation_seed = 1)
 #'
-#' # Per-event empirical p-values and the full null draws
-#' head(pseudo_r_square_sparse[, c("event", "pseudo_correlation", "emp_pvalue")])
-#' dim(attr(pseudo_r_square_sparse, "null_draws"))
+#' # Per-event empirical p-values and the exportable long null distribution
+#' head(pseudo_r_square_sparse$statistics[,
+#'   c("event", "pseudo_correlation", "emp_pvalue")])
+#' dim(pseudo_r_square_sparse$null_distribution)
 #'
 #' # Example using Nagelkerke R-squared instead of Cox-Snell
 #' pseudo_r_square_nagel <- get_pseudo_correlation(ZDB_matrix, m1_inclusion, m2_exclusion,
@@ -291,15 +301,65 @@ get_pseudo_correlation <- function(ZDB_matrix, m1_inclusion = NULL, m2_exclusion
   # Benjamini-Hochberg adjusted empirical p-values across the retained events.
   results$emp_padj <- stats::p.adjust(results$emp_pvalue, method = "BH")
 
-  # Attach the full per-event null draws for custom downstream analyses.
-  if (nrow(null_mat) > 0L) {
-    rownames(null_mat) <- results$event
-    colnames(null_mat) <- paste0("perm_", seq_len(permutation_count))
-  }
-  data.table::setattr(results, "null_draws", null_mat)
+  # Expose every retained event-by-permutation draw in a long, exportable table.
+  # R matrices are column-major, so this ordering groups all retained events for
+  # permutation 1, followed by all retained events for permutation 2, and so on.
+  null_distribution <- data.table::data.table(
+    event = rep(results$event, times = permutation_count),
+    permutation = rep(seq_len(permutation_count), each = nrow(results)),
+    null_pseudo_correlation = as.vector(null_mat)
+  )
+
+  metadata <- list(
+    metric = metric,
+    permutation_count = permutation_count,
+    permutation_seed = permutation_seed,
+    n_events_input = nrow(ZDB_matrix),
+    n_events_retained = nrow(results),
+    n_null_draws = nrow(null_distribution),
+    n_null_valid = sum(!is.na(null_distribution$null_pseudo_correlation)),
+    pooled_null_usage = "descriptive"
+  )
+
+  result <- structure(
+    list(
+      statistics = results,
+      null_distribution = null_distribution,
+      metadata = metadata
+    ),
+    class = c("splikit_pseudo_correlation_result", "list")
+  )
 
   if (verbose) message("Computation completed successfully.")
-  return(results)
+  return(result)
+}
+
+#' Print a pseudo-correlation result
+#'
+#' Prints a short preview of the per-event statistics and reports the size of
+#' the long null distribution without printing every permutation draw.
+#'
+#' @param x A `splikit_pseudo_correlation_result` object.
+#' @param n Number of statistic rows to preview. Defaults to `6L`.
+#' @param ... Additional arguments passed to the `data.table` print method.
+#'
+#' @return `x`, invisibly.
+#' @method print splikit_pseudo_correlation_result
+#' @export
+print.splikit_pseudo_correlation_result <- function(x, n = 6L, ...) {
+  if (!is.numeric(n) || length(n) != 1L || is.na(n) || n < 0) {
+    stop("n must be a single non-negative integer.", call. = FALSE)
+  }
+  n <- as.integer(n)
+
+  cat("Pseudo-correlation result\n")
+  cat("Statistics:", nrow(x$statistics), "retained event(s)\n")
+  print(utils::head(x$statistics, n), ...)
+  cat(
+    "Null distribution:", nrow(x$null_distribution), "row(s);",
+    x$metadata$n_null_valid, "valid draw(s)\n"
+  )
+  invisible(x)
 }
 
 #' Calculate Row-wise Variance for Dense or Sparse Matrices

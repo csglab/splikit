@@ -228,9 +228,8 @@ permutations for reproducibility without disturbing the global RNG
 \if{html}{\out{</div>}}
 }
 \subsection{Returns}{
-A data.table with event names, pseudo_correlation, null_distribution,
-null_sd, n_perm_valid, emp_pvalue, and emp_padj, plus the full null draws
-in attr(result, "null_draws").
+A \code{splikit_pseudo_correlation_result} with per-event statistics,
+a long event-by-permutation null distribution, and computation metadata.
 }
 }
 \if{html}{\out{<hr>}}
