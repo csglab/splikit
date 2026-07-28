@@ -3,9 +3,12 @@
 
 **Splikit** /ˈsplaɪ.kɪt/ is a comprehensive R toolkit for analyzing alternative splicing in single-cell RNA sequencing (scRNA-seq) data. It offers a streamlined workflow for transforming raw junction abundance data from tools such as STARsolo into actionable insights—detecting differential splicing events and enabling rich downstream analyses. Designed for both power and ease of use, Splikit integrates high-performance C++ implementations and memory-efficient data structures to handle large datasets, all through a clean and intuitive R interface.
 
+[![CRAN status](https://www.r-pkg.org/badges/version/splikit)](https://CRAN.R-project.org/package=splikit)
 [![R-CMD-check](https://github.com/csglab/splikit/actions/workflows/R-CMD-check.yml/badge.svg)](https://github.com/csglab/splikit/actions/workflows/R-CMD-check.yml)
 [![Documentation](https://img.shields.io/badge/Docs-Learn%20More-blue.svg)](https://csglab.github.io/splikit/)
 [![CRAN status](https://www.r-pkg.org/badges/version/splikit)](https://CRAN.R-project.org/package=splikit) [![GitHub version](https://img.shields.io/github/v/release/csglab/splikit?label=GitHub)](https://github.com/csglab/splikit/releases/latest)
+
+
 
 ## **Requirements**
 
