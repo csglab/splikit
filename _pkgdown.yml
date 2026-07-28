@@ -82,6 +82,7 @@ reference:
   desc: Additional analysis utilities
   contents:
   - get_pseudo_correlation
+  - print.splikit_pseudo_correlation_result
   - get_silhouette_mean
 
 - title: Data

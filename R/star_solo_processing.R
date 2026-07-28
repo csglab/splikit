@@ -1122,8 +1122,10 @@ make_eventdata_plus <- function(eventdata, GTF_file_direction) {
 #' Constructs sparse gene expression matrices from one or more directories containing 10X Genomics-style output.
 #' The function supports barcode filtering using either an external whitelist or the internally provided filtered barcode file.
 #'
-#' @param expression_dirs A character vector or list of strings. Each element must be a path to a directory containing the
-#'   gene expression matrix files: \code{matrix.mtx}, \code{barcodes.tsv}, and \code{features.tsv} (or \code{genes.tsv}).
+#' @param expression_dirs A character vector or list of strings. Each element
+#'   must point to a gene-expression output directory containing \code{raw}
+#'   and/or \code{filtered} subdirectories with the matrix, barcodes, and
+#'   features files.
 #'
 #' @param sample_ids A character vector or list of unique sample identifiers, one for each element in \code{expression_dirs}.
 #'   These are used to name outputs in the returned list when multiple samples are provided.
@@ -1136,6 +1138,17 @@ make_eventdata_plus <- function(eventdata, GTF_file_direction) {
 #'   the function will attempt to use the default filtered barcode list from the input directory.
 #'   If \code{FALSE}, no internal filtration will be applied unless a whitelist is explicitly provided.
 #' @param verbose Logical. If \code{TRUE}, prints progress and informational messages. Default is \code{FALSE}.
+#' @param matrix_source Character. Directory below each \code{expression_dirs}
+#'   entry from which the count matrix, barcodes, and features are read. One of
+#'   \code{"raw"}, \code{"filtered"}, or \code{"auto"}. The default is
+#'   \code{"raw"}. The compatibility option \code{"auto"} preserves the
+#'   historical directory behavior: it uses
+#'   \code{"filtered"} when \code{use_internal_whitelist = TRUE} and
+#'   \code{"raw"} otherwise.
+#' @param matrix_file Character. Name of the Matrix Market count file inside the
+#'   selected source directory. The default, \code{"auto"}, uses STARsolo's
+#'   \code{"UniqueAndMult-EM.mtx"} when available and otherwise falls back to
+#'   \code{"matrix.mtx"}. Supply a filename explicitly to force that file.
 #'
 #' @return
 #' If a single sample is provided, returns a sparse matrix of class \code{"dgCMatrix"} with genes as rows and barcodes as columns.
@@ -1150,11 +1163,28 @@ make_eventdata_plus <- function(eventdata, GTF_file_direction) {
 #' If neither an external whitelist nor an internal filtered barcode file is available, all barcodes from the
 #' raw matrix will be retained.
 #'
+#' Matrix selection and barcode filtering are independent. For example,
+#' \code{matrix_source = "raw"} with \code{use_internal_whitelist = TRUE}
+#' reads the raw count matrix and then retains barcodes listed in
+#' \code{filtered/barcodes.tsv}. In contrast,
+#' \code{matrix_source = "filtered"} reads the already-filtered matrix directly.
+#' With the defaults, \code{raw/UniqueAndMult-EM.mtx} is preferred and
+#' \code{raw/matrix.mtx} is used as a fallback.
+#'
 #' @section Dependencies:
 #' Requires the \pkg{Matrix} package for sparse matrix handling and potentially \pkg{data.table} for efficient I/O.
 #'
 #' @export
-make_gene_count <- function(expression_dirs, sample_ids, whitelist_barcodes = NULL, use_internal_whitelist = TRUE, verbose = FALSE) {
+make_gene_count <- function(expression_dirs, sample_ids, whitelist_barcodes = NULL,
+                            use_internal_whitelist = TRUE, verbose = FALSE,
+                            matrix_source = c("raw", "filtered", "auto"),
+                            matrix_file = "auto") {
+
+  matrix_source <- match.arg(matrix_source)
+  if (!is.character(matrix_file) || length(matrix_file) != 1L ||
+      is.na(matrix_file) || !nzchar(matrix_file)) {
+    stop("matrix_file must be a single non-empty filename.", call. = FALSE)
+  }
 
   # Handle single sample input by converting to lists
   if (!is.list(expression_dirs)) expression_dirs <- list(expression_dirs)
@@ -1172,22 +1202,50 @@ make_gene_count <- function(expression_dirs, sample_ids, whitelist_barcodes = NU
 
   # Helper function to process one sample
   process_ex_sample <- function(expression_dir, sample_id, whitelist_barcode) {
-    # Determine directory (filtered or raw)
-    data_dir <- if (use_internal_whitelist) paste0(expression_dir, "/filtered") else paste0(expression_dir, "/raw")
+    # "auto" retains the pre-existing coupling for backward compatibility.
+    selected_source <- if (identical(matrix_source, "auto")) {
+      if (use_internal_whitelist) "filtered" else "raw"
+    } else {
+      matrix_source
+    }
+    data_dir <- file.path(expression_dir, selected_source)
+
+    selected_matrix_file <- matrix_file
+    if (identical(matrix_file, "auto")) {
+      candidate_files <- c("UniqueAndMult-EM.mtx", "matrix.mtx")
+      available <- candidate_files[
+        file.exists(file.path(data_dir, candidate_files))
+      ]
+      if (length(available) == 0L) {
+        stop(
+          "No expression matrix file found for sample ", sample_id,
+          " in ", data_dir, ". Tried: ",
+          paste(candidate_files, collapse = ", "),
+          call. = FALSE
+        )
+      }
+      selected_matrix_file <- available[[1L]]
+    }
 
     # Define paths
-    expression_matrix_dir <- paste0(data_dir, "/matrix.mtx")
-    expression_barcodes_dir <- paste0(data_dir, "/barcodes.tsv")
-    expression_features_dir <- paste0(data_dir, "/features.tsv")
-    filtered_barcodes_dir <- paste0(expression_dir, "/filtered/barcodes.tsv")  # For barcode filtration
+    expression_matrix_dir <- file.path(data_dir, selected_matrix_file)
+    expression_barcodes_dir <- file.path(data_dir, "barcodes.tsv")
+    expression_features_dir <- file.path(data_dir, "features.tsv")
+    filtered_barcodes_dir <- file.path(expression_dir, "filtered", "barcodes.tsv")
 
     # Check for required files
-    if (!file.exists(expression_matrix_dir)) stop("No expression matrix file found for sample: ", sample_id, call. = FALSE)
+    if (!file.exists(expression_matrix_dir)) {
+      stop("No expression matrix file found for sample ", sample_id,
+           ": ", expression_matrix_dir, call. = FALSE)
+    }
     if (!file.exists(expression_barcodes_dir)) stop("No barcodes file found for sample: ", sample_id, call. = FALSE)
     if (!file.exists(expression_features_dir)) stop("No features file found for sample: ", sample_id, call. = FALSE)
 
     # Read gene expression data
-    if (verbose) message("|-- Processing gene expression data for sample: ", sample_id)
+    if (verbose) {
+      message("|-- Processing gene expression data for sample: ", sample_id,
+              " (", selected_source, "/", selected_matrix_file, ")")
+    }
     g_mtx <- Matrix::readMM(expression_matrix_dir)
     g_brc <- data.table::fread(expression_barcodes_dir, header = FALSE, showProgress = FALSE)$V1
     g_feature <- data.table::fread(expression_features_dir, header = FALSE, showProgress = FALSE)

@@ -1,5 +1,5 @@
 test_that("get_pseudo_correlation works on valid data", {
-  n_events <- 5
+  n_events <- 10
   n_cells <- 100
   set.seed(42)
   
@@ -12,27 +12,36 @@ test_that("get_pseudo_correlation works on valid data", {
   
   # Test with default arguments
   res <- get_pseudo_correlation(ZDB, m1, m2)
-  expect_true(data.table::is.data.table(res))
-  expect_equal(nrow(res), n_events)
-  expect_true(all(c("event", "pseudo_correlation", "null_distribution") %in% names(res)))
-  expect_type(res$pseudo_correlation, "double")
+  expect_s3_class(res, "splikit_pseudo_correlation_result")
+  expect_named(res, c("statistics", "null_distribution", "metadata"))
+  expect_true(data.table::is.data.table(res$statistics))
+  expect_true(data.table::is.data.table(res$null_distribution))
+  expect_equal(nrow(res$statistics), n_events)
+  expect_true(all(c("event", "pseudo_correlation", "null_distribution") %in%
+                  names(res$statistics)))
+  expect_named(res$null_distribution,
+               c("event", "permutation", "null_pseudo_correlation"))
+  expect_type(res$statistics$pseudo_correlation, "double")
+  expect_output(print(res), "Null distribution: 1000 row\\(s\\)")
   
   # Test with Nagelkerke metric
   res_nagel <- get_pseudo_correlation(ZDB, m1, m2, metric = "Nagelkerke")
-  expect_true(data.table::is.data.table(res_nagel))
-  expect_equal(nrow(res_nagel), n_events)
+  expect_s3_class(res_nagel, "splikit_pseudo_correlation_result")
+  expect_equal(nrow(res_nagel$statistics), n_events)
   
   # Test with sparse matrices
   m1_sp <- Matrix::Matrix(m1, sparse = TRUE)
   m2_sp <- Matrix::Matrix(m2, sparse = TRUE)
   res_sp <- get_pseudo_correlation(ZDB, m1_sp, m2_sp)
-  expect_equal(res_sp$pseudo_correlation, res$pseudo_correlation)
+  expect_equal(res_sp$statistics$pseudo_correlation,
+               res$statistics$pseudo_correlation)
   
   # Test with SplikitObject wrapper
   m1_obj <- list(m1 = m1_sp, m2 = m2_sp)
   class(m1_obj) <- "SplikitObject"
   res_obj <- get_pseudo_correlation(m1_obj, m1_inclusion = ZDB)
-  expect_equal(res_obj$pseudo_correlation, res$pseudo_correlation)
+  expect_equal(res_obj$statistics$pseudo_correlation,
+               res$statistics$pseudo_correlation)
 })
 
 test_that("get_pseudo_correlation permutation null is valid and reproducible", {
@@ -47,33 +56,61 @@ test_that("get_pseudo_correlation permutation null is valid and reproducible", {
 
   res <- get_pseudo_correlation(ZDB, m1, m2,
                                 permutation_count = 50, permutation_seed = 123)
+  stats <- res$statistics
+  draws <- res$null_distribution
 
-  # New columns are present and well formed
-  expect_true(all(c("null_sd", "n_perm_valid", "emp_pvalue", "emp_padj") %in% names(res)))
-  expect_true(all(res$emp_pvalue > 0 & res$emp_pvalue <= 1))
-  expect_true(all(res$emp_padj >= 0 & res$emp_padj <= 1))
-  expect_true(all(res$n_perm_valid <= 50L))
+  # Statistic columns are present and well formed
+  expect_true(all(c("null_sd", "n_perm_valid", "emp_pvalue", "emp_padj") %in%
+                  names(stats)))
+  expect_true(all(stats$emp_pvalue > 0 & stats$emp_pvalue <= 1))
+  expect_true(all(stats$emp_padj >= 0 & stats$emp_padj <= 1))
+  expect_true(all(stats$n_perm_valid <= 50L))
   # Smallest achievable empirical p-value is 1 / (n_perm_valid + 1)
-  expect_true(all(res$emp_pvalue >= 1 / (res$n_perm_valid + 1) - 1e-9))
+  expect_true(all(stats$emp_pvalue >= 1 / (stats$n_perm_valid + 1) - 1e-9))
 
-  # Full null draws attached as an attribute, correctly shaped
-  draws <- attr(res, "null_draws")
-  expect_true(is.matrix(draws))
-  expect_equal(ncol(draws), 50L)
-  expect_equal(nrow(draws), nrow(res))
+  # The long null table has one row per retained event and permutation and
+  # preserves the matrix's permutation-major ordering.
+  expect_equal(nrow(draws), nrow(stats) * 50L)
+  expect_equal(draws$event, rep(stats$event, times = 50L))
+  expect_equal(draws$permutation, rep(seq_len(50L), each = nrow(stats)))
+
+  null_mat <- matrix(draws$null_pseudo_correlation,
+                     nrow = nrow(stats), ncol = 50L)
+  expect_equal(rowSums(!is.na(null_mat)), stats$n_perm_valid)
+  expect_equal(rowMeans(null_mat, na.rm = TRUE), stats$null_distribution)
+  expect_equal(apply(null_mat, 1L, stats::sd, na.rm = TRUE), stats$null_sd)
+
+  reconstructed_p <- vapply(seq_len(nrow(stats)), function(i) {
+    valid <- !is.na(null_mat[i, ])
+    (sum(abs(null_mat[i, valid]) >= abs(stats$pseudo_correlation[i])) + 1) /
+      (sum(valid) + 1)
+  }, numeric(1))
+  expect_equal(reconstructed_p, stats$emp_pvalue)
+
+  expect_equal(res$metadata$n_events_input, n_events)
+  expect_equal(res$metadata$n_events_retained, nrow(stats))
+  expect_equal(res$metadata$n_null_draws, nrow(draws))
+  expect_equal(res$metadata$n_null_valid,
+               sum(!is.na(draws$null_pseudo_correlation)))
+  expect_identical(res$metadata$pooled_null_usage, "descriptive")
 
   # Same seed -> identical null; observed correlation is seed-independent
   res2 <- get_pseudo_correlation(ZDB, m1, m2,
                                  permutation_count = 50, permutation_seed = 123)
+  expect_equal(res$statistics$null_distribution,
+               res2$statistics$null_distribution)
+  expect_equal(res$statistics$emp_pvalue, res2$statistics$emp_pvalue)
+  expect_equal(res$statistics$pseudo_correlation,
+               res2$statistics$pseudo_correlation)
   expect_equal(res$null_distribution, res2$null_distribution)
-  expect_equal(res$emp_pvalue, res2$emp_pvalue)
-  expect_equal(res$pseudo_correlation, res2$pseudo_correlation)
 
   # Different seed -> different draws, but the same observed correlation
   res3 <- get_pseudo_correlation(ZDB, m1, m2,
                                  permutation_count = 50, permutation_seed = 999)
-  expect_false(isTRUE(all.equal(attr(res, "null_draws"), attr(res3, "null_draws"))))
-  expect_equal(res$pseudo_correlation, res3$pseudo_correlation)
+  expect_false(isTRUE(all.equal(res$null_distribution$null_pseudo_correlation,
+                                res3$null_distribution$null_pseudo_correlation)))
+  expect_equal(res$statistics$pseudo_correlation,
+               res3$statistics$pseudo_correlation)
 
   # permutation_seed must not perturb the caller's global RNG stream
   set.seed(7); a <- runif(3)
@@ -86,9 +123,19 @@ test_that("get_pseudo_correlation permutation null is valid and reproducible", {
   # equals the single column of draws
   res1 <- get_pseudo_correlation(ZDB, m1, m2,
                                  permutation_count = 1, permutation_seed = 5)
-  expect_equal(ncol(attr(res1, "null_draws")), 1L)
-  expect_equal(unname(res1$null_distribution),
-               unname(attr(res1, "null_draws")[, 1]))
+  expect_equal(nrow(res1$null_distribution), nrow(res1$statistics))
+  expect_equal(unname(res1$statistics$null_distribution),
+               unname(res1$null_distribution$null_pseudo_correlation))
+
+  # Both component tables can be exported and imported without losing rows or
+  # values. Metadata intentionally remains an R list rather than CSV columns.
+  statistics_file <- tempfile(fileext = ".csv")
+  null_file <- tempfile(fileext = ".csv")
+  on.exit(unlink(c(statistics_file, null_file)), add = TRUE)
+  data.table::fwrite(stats, statistics_file)
+  data.table::fwrite(draws, null_file)
+  expect_equal(data.table::fread(statistics_file), stats)
+  expect_equal(data.table::fread(null_file), draws)
 
   # Input validation
   expect_error(get_pseudo_correlation(ZDB, m1, m2, permutation_count = 0),

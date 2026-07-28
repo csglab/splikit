@@ -9,12 +9,16 @@ make_gene_count(
   sample_ids,
   whitelist_barcodes = NULL,
   use_internal_whitelist = TRUE,
-  verbose = FALSE
+  verbose = FALSE,
+  matrix_source = c("raw", "filtered", "auto"),
+  matrix_file = "auto"
 )
 }
 \arguments{
-\item{expression_dirs}{A character vector or list of strings. Each element must be a path to a directory containing the
-gene expression matrix files: \code{matrix.mtx}, \code{barcodes.tsv}, and \code{features.tsv} (or \code{genes.tsv}).}
+\item{expression_dirs}{A character vector or list of strings. Each element
+must point to a gene-expression output directory containing \code{raw}
+and/or \code{filtered} subdirectories with the matrix, barcodes, and
+features files.}
 
 \item{sample_ids}{A character vector or list of unique sample identifiers, one for each element in \code{expression_dirs}.
 These are used to name outputs in the returned list when multiple samples are provided.}
@@ -28,6 +32,19 @@ the function will attempt to use the default filtered barcode list from the inpu
 If \code{FALSE}, no internal filtration will be applied unless a whitelist is explicitly provided.}
 
 \item{verbose}{Logical. If \code{TRUE}, prints progress and informational messages. Default is \code{FALSE}.}
+
+\item{matrix_source}{Character. Directory below each \code{expression_dirs}
+entry from which the count matrix, barcodes, and features are read. One of
+\code{"raw"}, \code{"filtered"}, or \code{"auto"}. The default is
+\code{"raw"}. The compatibility option \code{"auto"} preserves the
+historical directory behavior: it uses
+\code{"filtered"} when \code{use_internal_whitelist = TRUE} and
+\code{"raw"} otherwise.}
+
+\item{matrix_file}{Character. Name of the Matrix Market count file inside the
+selected source directory. The default, \code{"auto"}, uses STARsolo's
+\code{"UniqueAndMult-EM.mtx"} when available and otherwise falls back to
+\code{"matrix.mtx"}. Supply a filename explicitly to force that file.}
 }
 \value{
 If a single sample is provided, returns a sparse matrix of class \code{"dgCMatrix"} with genes as rows and barcodes as columns.
@@ -45,6 +62,14 @@ output by tools like CellRanger.
 
 If neither an external whitelist nor an internal filtered barcode file is available, all barcodes from the
 raw matrix will be retained.
+
+Matrix selection and barcode filtering are independent. For example,
+\code{matrix_source = "raw"} with \code{use_internal_whitelist = TRUE}
+reads the raw count matrix and then retains barcodes listed in
+\code{filtered/barcodes.tsv}. In contrast,
+\code{matrix_source = "filtered"} reads the already-filtered matrix directly.
+With the defaults, \code{raw/UniqueAndMult-EM.mtx} is preferred and
+\code{raw/matrix.mtx} is used as a fallback.
 }
 \section{Dependencies}{
 

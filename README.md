@@ -6,7 +6,9 @@
 [![CRAN status](https://www.r-pkg.org/badges/version/splikit)](https://CRAN.R-project.org/package=splikit)
 [![R-CMD-check](https://github.com/csglab/splikit/actions/workflows/R-CMD-check.yml/badge.svg)](https://github.com/csglab/splikit/actions/workflows/R-CMD-check.yml)
 [![Documentation](https://img.shields.io/badge/Docs-Learn%20More-blue.svg)](https://csglab.github.io/splikit/)
-[![CRAN downloads](https://cranlogs.r-pkg.org/badges/grand-total/splikit)](https://cran.r-project.org/package=splikit)
+[![CRAN status](https://www.r-pkg.org/badges/version/splikit)](https://CRAN.R-project.org/package=splikit) [![GitHub version](https://img.shields.io/github/v/release/csglab/splikit?label=GitHub)](https://github.com/csglab/splikit/releases/latest)
+
+
 
 ## **Requirements**
 
@@ -99,5 +101,4 @@ This project is licensed under the MIT License – see the `LICENSE.md` file for
 ## Acknowledgment
 
 The author is aware of the package’s limitations and potential breakpoints. It was developed under limited knowledge, time, and resources, and is provided with the hope that it will be useful. Feedback and contributions from the community are warmly welcomed. If you encounter any issues or have suggestions, please [open an issue](https://github.com/csglab/splikit/issues/new).
-
 

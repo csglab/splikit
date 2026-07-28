@@ -662,10 +662,14 @@ test_that("SplikitObject$getPseudoCorrelation executes correctly", {
   # Keep permutation_count small here: this runs on the full 2000 x 2000 toy data.
   res <- obj$getPseudoCorrelation(ZDB_matrix = ZDB_matrix, suppress_warnings = TRUE,
                                   permutation_count = 3, permutation_seed = 1)
-  expect_true(data.table::is.data.table(res))
+  expect_s3_class(res, "splikit_pseudo_correlation_result")
+  expect_true(data.table::is.data.table(res$statistics))
+  expect_true(data.table::is.data.table(res$null_distribution))
   # With pure random data, some might be NA and removed, check columns
   expect_true(all(c("event", "pseudo_correlation", "null_distribution",
-                    "null_sd", "n_perm_valid", "emp_pvalue", "emp_padj") %in% names(res)))
-  expect_true(all(res$emp_pvalue > 0 & res$emp_pvalue <= 1))
+                    "null_sd", "n_perm_valid", "emp_pvalue", "emp_padj") %in%
+                  names(res$statistics)))
+  expect_true(all(res$statistics$emp_pvalue > 0 &
+                  res$statistics$emp_pvalue <= 1))
+  expect_equal(nrow(res$null_distribution), nrow(res$statistics) * 3L)
 })
-

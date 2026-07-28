@@ -43,7 +43,18 @@ caller's global RNG stream is saved and restored, so passing a seed does not
 perturb downstream randomness. Defaults to \code{NULL} (use the ambient RNG state).}
 }
 \value{
-A \code{data.table} with the following columns:
+An S3 object of class \code{splikit_pseudo_correlation_result} with three
+components:
+\describe{
+\item{statistics}{A per-event \code{data.table} with the columns described below.}
+\item{null_distribution}{A long \code{data.table} containing one row per retained
+event and permutation, with columns \code{event}, \code{permutation}, and
+\code{null_pseudo_correlation}. This table is suitable for direct export or pooled
+descriptive analyses; event-level p-values remain based on each event's own
+permutation draws.}
+\item{metadata}{A list recording the permutation settings and null-draw counts.}
+}
+The \code{statistics} component contains:
 \describe{
 \item{event}{The event names from \code{ZDB_matrix} rownames.}
 \item{pseudo_correlation}{The computed pseudo R² correlation values using the specified metric.}
@@ -53,8 +64,6 @@ A \code{data.table} with the following columns:
 \item{emp_pvalue}{Two-sided empirical p-value, \code{(b + 1) / (n_perm_valid + 1)}, where \code{b} is the number of valid null draws whose absolute value is greater than or equal to the absolute observed correlation.}
 \item{emp_padj}{Benjamini-Hochberg adjusted \code{emp_pvalue} across the retained events.}
 }
-The full matrix of per-event null draws (events x \code{permutation_count}) is attached
-as \code{attr(result, "null_draws")} for custom downstream analyses.
 }
 \description{
 This function calculates a pseudo R²-like correlation metric using a beta-binomial model
@@ -99,9 +108,10 @@ pseudo_r_square_sparse <- get_pseudo_correlation(ZDB_matrix, m1_inclusion, m2_ex
                                                  permutation_count = 20,
                                                  permutation_seed = 1)
 
-# Per-event empirical p-values and the full null draws
-head(pseudo_r_square_sparse[, c("event", "pseudo_correlation", "emp_pvalue")])
-dim(attr(pseudo_r_square_sparse, "null_draws"))
+# Per-event empirical p-values and the exportable long null distribution
+head(pseudo_r_square_sparse$statistics[,
+  c("event", "pseudo_correlation", "emp_pvalue")])
+dim(pseudo_r_square_sparse$null_distribution)
 
 # Example using Nagelkerke R-squared instead of Cox-Snell
 pseudo_r_square_nagel <- get_pseudo_correlation(ZDB_matrix, m1_inclusion, m2_exclusion,
