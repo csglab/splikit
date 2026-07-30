@@ -7,6 +7,8 @@
 [![R-CMD-check](https://github.com/csglab/splikit/actions/workflows/R-CMD-check.yml/badge.svg)](https://github.com/csglab/splikit/actions/workflows/R-CMD-check.yml)
 [![Documentation](https://img.shields.io/badge/Docs-Learn%20More-blue.svg)](https://csglab.github.io/splikit/)
 [![GitHub version](https://img.shields.io/github/v/release/csglab/splikit?label=GitHub)](https://github.com/csglab/splikit/releases/latest)
+[![CRAN downloads](https://cranlogs.r-pkg.org/badges/grand-total/splikit)](https://cran.r-project.org/package=splikit)
+
 
 
 
